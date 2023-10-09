@@ -6,7 +6,6 @@
     public class CriticalSectionKey : IDisposable
     {
         public CriticalSection Owner { get; private set; }
-
         public bool IsLockHeld { get; private set; }
 
         internal CriticalSectionKey(CriticalSection owner, bool isLockHeld)

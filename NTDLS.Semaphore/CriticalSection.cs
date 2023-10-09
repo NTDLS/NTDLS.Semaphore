@@ -10,43 +10,11 @@
         public delegate T CriticalSectionDelegateRWithNotNullableResultT<T>();
 
         /// <summary>
-        /// Identified the current thread that owns the lock.
+        /// Identifies the current thread that owns the lock.
         /// </summary>
         public Thread? OwnerThread { get; private set; }
 
         private CriticalSectionKey? _currentHeldKey;
-
-        public bool TryAcquire(int timeout)
-        {
-            bool isLockHeld = Monitor.TryEnter(this, timeout);
-            if (isLockHeld)
-            {
-                OwnerThread = Thread.CurrentThread;
-            }
-            return isLockHeld;
-        }
-
-        public bool TryAcquire()
-        {
-            bool isLockHeld = Monitor.TryEnter(this);
-            if (isLockHeld)
-            {
-                OwnerThread = Thread.CurrentThread;
-            }
-            return isLockHeld;
-        }
-
-        public void Acquire()
-        {
-            Monitor.Enter(this);
-            OwnerThread = Thread.CurrentThread;
-        }
-
-        public void Release()
-        {
-            Monitor.Exit(this);
-            OwnerThread = Thread.CurrentThread;
-        }
 
         /// <summary>
         /// Enters a critical section and returns a IDisposable object for which its disposal will release the lock.
@@ -62,12 +30,12 @@
         /// <summary>
         /// Attempts to enter a critical section for a given amount of time and returns a IDisposable object for which its disposal will release the lock.
         /// </summary>
-        /// <param name="timeout"></param>
+        /// <param name="timeoutMilliseconds"></param>
         /// <param name="wasLockAcquired"></param>
         /// <returns></returns>
-        public CriticalSectionKey TryLock(int timeout, out bool wasLockAcquired)
+        public CriticalSectionKey TryLock(int timeoutMilliseconds, out bool wasLockAcquired)
         {
-            wasLockAcquired = TryAcquire(timeout);
+            wasLockAcquired = TryAcquire(timeoutMilliseconds);
             _currentHeldKey = new CriticalSectionKey(this, wasLockAcquired);
             return _currentHeldKey;
         }
@@ -99,5 +67,58 @@
                 return function();
             }
         }
+
+        #region Internal interface functionality.
+
+        /// <summary>
+        /// Internal use only. Attempts to acquire the lock for a given number of milliseconds.
+        /// </summary>
+        /// <param name="timeoutMilliseconds"></param>
+        /// <returns></returns>
+
+        public bool TryAcquire(int timeoutMilliseconds)
+        {
+            bool isLockHeld = Monitor.TryEnter(this, timeoutMilliseconds);
+            if (isLockHeld)
+            {
+                OwnerThread = Thread.CurrentThread;
+            }
+            return isLockHeld;
+        }
+
+        /// <summary>
+        /// Internal use only. Attempts to acquire the lock.
+        /// </summary>
+        /// <returns></returns>
+        public bool TryAcquire()
+        {
+            bool isLockHeld = Monitor.TryEnter(this);
+            if (isLockHeld)
+            {
+                OwnerThread = Thread.CurrentThread;
+            }
+            return isLockHeld;
+        }
+
+
+        /// <summary>
+        /// Internal use only. Blocks until the lock is acquired.
+        /// </summary>
+        public void Acquire()
+        {
+            Monitor.Enter(this);
+            OwnerThread = Thread.CurrentThread;
+        }
+
+        /// <summary>
+        /// Internal use only. Releases the previously acquired lock.
+        /// </summary>
+        public void Release()
+        {
+            Monitor.Exit(this);
+            OwnerThread = Thread.CurrentThread;
+        }
+
+        #endregion
     }
 }
