@@ -554,6 +554,32 @@
         }
 
         /// <summary>
+        /// Attempts to acquire the lock, if successful then executes the delegate function.
+        /// </summary>
+        /// <param name="wasLockObtained"></param>
+        /// <param name="function"></param>
+        public void TryUse(CriticalResourceDelegateWithVoidResult function)
+        {
+            bool wasLockObtained = false;
+            try
+            {
+                wasLockObtained = TryAcquire();
+                if (wasLockObtained)
+                {
+                    function(_value);
+                    return;
+                }
+            }
+            finally
+            {
+                if (wasLockObtained)
+                {
+                    Release();
+                }
+            }
+        }
+
+        /// <summary>
         /// Attempts to acquire the lock for the given number of milliseconds, if successful then executes the delegate function.
         /// </summary>
         /// <param name="wasLockObtained"></param>
@@ -562,6 +588,33 @@
         public void TryUse(out bool wasLockObtained, int timeoutMilliseconds, CriticalResourceDelegateWithVoidResult function)
         {
             wasLockObtained = false;
+            try
+            {
+                wasLockObtained = TryAcquire(timeoutMilliseconds);
+                if (wasLockObtained)
+                {
+                    function(_value);
+                    return;
+                }
+            }
+            finally
+            {
+                if (wasLockObtained)
+                {
+                    Release();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Attempts to acquire the lock for the given number of milliseconds, if successful then executes the delegate function.
+        /// </summary>
+        /// <param name="wasLockObtained"></param>
+        /// <param name="timeoutMilliseconds"></param>
+        /// <param name="function"></param>
+        public void TryUse(int timeoutMilliseconds, CriticalResourceDelegateWithVoidResult function)
+        {
+            bool wasLockObtained = false;
             try
             {
                 wasLockObtained = TryAcquire(timeoutMilliseconds);
@@ -672,6 +725,36 @@
         }
 
         /// <summary>
+        /// Attempts to acquire the lock. If successful then executes the delegate function and returns the non-nullable delegate value.
+        /// Otherwise returns the supplied default value.
+        /// </summary>
+        /// <typeparam name="R"></typeparam>
+        /// <param name="wasLockObtained"></param>
+        /// <param name="defaultValue"></param>
+        /// <param name="function"></param>
+        /// <returns></returns>
+        public R TryUse<R>(R defaultValue, CriticalResourceDelegateWithNotNullableResultT<R> function)
+        {
+            bool wasLockObtained = false;
+            try
+            {
+                wasLockObtained = TryAcquire();
+                if (wasLockObtained)
+                {
+                    return function(_value);
+                }
+            }
+            finally
+            {
+                if (wasLockObtained)
+                {
+                    Release();
+                }
+            }
+            return defaultValue;
+        }
+
+        /// <summary>
         /// Attempts to acquire the lock for the given number of milliseconds. If successful then executes the delegate function and returns the non-nullable delegate value.
         /// Otherwise returns the supplied default value.
         /// </summary>
@@ -685,6 +768,39 @@
         public R TryUse<R>(out bool wasLockObtained, R defaultValue, int timeoutMilliseconds, CriticalResourceDelegateWithNotNullableResultT<R> function)
         {
             wasLockObtained = false;
+            try
+            {
+                wasLockObtained = TryAcquire(timeoutMilliseconds);
+                if (wasLockObtained)
+                {
+                    return function(_value);
+                }
+            }
+            finally
+            {
+                if (wasLockObtained)
+                {
+                    Release();
+                }
+            }
+
+            return defaultValue;
+        }
+
+        /// <summary>
+        /// Attempts to acquire the lock for the given number of milliseconds. If successful then executes the delegate function and returns the non-nullable delegate value.
+        /// Otherwise returns the supplied default value.
+        /// </summary>
+        /// <typeparam name="R"></typeparam>
+        /// <param name="wasLockObtained"></param>
+        /// <param name="defaultValue"></param>
+        /// <param name="timeoutMilliseconds"></param>
+        /// <param name="function"></param>
+        /// <returns></returns>
+
+        public R TryUse<R>(R defaultValue, int timeoutMilliseconds, CriticalResourceDelegateWithNotNullableResultT<R> function)
+        {
+            bool wasLockObtained = false;
             try
             {
                 wasLockObtained = TryAcquire(timeoutMilliseconds);
