@@ -7,7 +7,7 @@
     <Nullable>enable</Nullable>
     <TargetFramework>net7.0</TargetFramework>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    <Title>NTDLS.MemQueue</Title>
+    <Title>NTDLS.Semaphore</Title>
     <Copyright>Copyright © 2023 NetworkDLS</Copyright>
     <Description>
       Provides various classes for to ensure sequential mult-threaded access to variables or sections of code.
@@ -16,16 +16,14 @@
     <RepositoryUrl>https://github.com/NTDLS/NTDLS.Semaphore</RepositoryUrl>
     <PackageTags>threading;critical-section;semaphore;parallel-execution;sequential-execution</PackageTags>
     <PackageReleaseNotes>
-      Fixed freeing of with multi-locks.
-      Added shared critical sections for critical resources to allow shared locks between resources.
-      Added nullable and non-nullable critical section delegate wrappers.
+      Fixed package name.
     </PackageReleaseNotes>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <Company>NetworkDLS</Company>
-    <AssemblyVersion>1.3.0</AssemblyVersion>
-    <FileVersion>1.3.0</FileVersion>
-    <VersionPrefix>1.3.0</VersionPrefix>
+    <AssemblyVersion>1.3.1</AssemblyVersion>
+    <FileVersion>1.3.1</FileVersion>
+    <VersionPrefix>1.3.1</VersionPrefix>
     <version></version>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>Logo.png</PackageIcon>
