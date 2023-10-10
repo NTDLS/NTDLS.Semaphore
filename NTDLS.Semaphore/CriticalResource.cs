@@ -224,7 +224,7 @@
         /// <param name="wasLockObtained"></param>
         /// <param name="function"></param>
         /// <returns></returns>
-        public R? TryUseAllNullable<R>(ICriticalResource[] resources, out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R> function)
+        public R? TryUseAll<R>(ICriticalResource[] resources, out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R> function)
         {
             var collection = new CriticalCollection[resources.Length];
 
@@ -337,7 +337,7 @@
         /// <param name="defaultValue"></param>
         /// <param name="function"></param>
         /// <returns></returns>
-        public R? TryUseAllNullable<R>(ICriticalResource[] resources, int timeoutMilliseconds, out bool wasLockObtained, R defaultValue, CriticalResourceDelegateWithNullableResultT<R> function)
+        public R? TryUseAll<R>(ICriticalResource[] resources, int timeoutMilliseconds, out bool wasLockObtained, R defaultValue, CriticalResourceDelegateWithNullableResultT<R> function)
         {
             var collection = new CriticalCollection[resources.Length];
 
@@ -393,7 +393,7 @@
         /// <param name="wasLockObtained"></param>
         /// <param name="function"></param>
         /// <returns></returns>
-        public R? TryUseAllNullable<R>(ICriticalResource[] resources, int timeoutMilliseconds, out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R> function)
+        public R? TryUseAll<R>(ICriticalResource[] resources, int timeoutMilliseconds, out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R> function)
         {
             var collection = new CriticalCollection[resources.Length];
 
@@ -447,7 +447,7 @@
         /// <param name="resources"></param>
         /// <param name="function"></param>
         /// <returns></returns>
-        public R? UseAllNullable<R>(ICriticalResource[] resources, CriticalResourceDelegateWithNullableResultT<R> function)
+        public R? UseAll<R>(ICriticalResource[] resources, CriticalResourceDelegateWithNullableResultT<R> function)
         {
             Acquire();
 
@@ -667,7 +667,7 @@
         /// <param name="wasLockObtained"></param>
         /// <param name="function"></param>
         /// <returns></returns>
-        public R? TryUseNullable<R>(out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R> function)
+        public R? TryUse<R>(out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R> function)
         {
             wasLockObtained = false;
             try
@@ -698,7 +698,7 @@
         /// <param name="function"></param>
         /// <returns></returns>
 
-        public R? TryUseNullable<R>(out bool wasLockObtained, int timeoutMilliseconds, CriticalResourceDelegateWithNullableResultT<R> function)
+        public R? TryUse<R>(out bool wasLockObtained, int timeoutMilliseconds, CriticalResourceDelegateWithNullableResultT<R> function)
         {
             wasLockObtained = false;
             try
