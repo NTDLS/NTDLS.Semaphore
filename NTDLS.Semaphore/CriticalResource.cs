@@ -8,12 +8,12 @@
     {
         #region Local Classes.
 
-        private class LockObject
+        private class CriticalCollection
         {
             public ICriticalResource Resource { get; set; }
             public bool IsLockHeld { get; set; } = false;
 
-            public LockObject(ICriticalResource resource)
+            public CriticalCollection(ICriticalResource resource)
             {
                 Resource = resource;
             }
@@ -21,6 +21,7 @@
 
         #endregion
 
+        private readonly ICriticalResource _criticalSection;
         private readonly T _value;
 
         public delegate void CriticalResourceDelegateWithVoidResult(T obj);
@@ -32,9 +33,46 @@
         /// </summary>
         public Thread? OwnerThread { get; private set; }
 
+        /// <summary>
+        /// Initializes a new critical section that envelopes a variable.
+        /// </summary>
         public CriticalResource()
         {
             _value = new T();
+            _criticalSection = new CriticalSection();
+        }
+
+        /// <summary>
+        /// Initializes a new critical section that envelopes a variable with a set value. This allows you to protect a variable that has a non-empty constructor.
+        /// </summary>
+        /// <param name="value"></param>
+        public CriticalResource(T value)
+        {
+            _value = value;
+            _criticalSection = new CriticalSection();
+        }
+
+        /// <summary>
+        /// Envelopes a variable with a set value, using a predefined critical section.
+        /// If other CriticalResources use the same criticalSection, they will require the exclusive lock of the shared criticalSection.
+        /// </summary>
+        /// <param name="criticalSection"></param>
+        public CriticalResource(ICriticalResource criticalSection)
+        {
+            _value = new T();
+            _criticalSection = criticalSection;
+        }
+
+        /// <summary>
+        /// Envelopes a variable with a set value, using a predefined critical section. This allows you to protect a variable that has a non-empty constructor.
+        /// If other CriticalResources use the same criticalSection, they will require the exclusive lock of the shared criticalSection.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="criticalSection"></param>
+        public CriticalResource(T value, ICriticalResource criticalSection)
+        {
+            _value = value;
+            _criticalSection = criticalSection;
         }
 
         /// <summary>
@@ -66,7 +104,7 @@
         {
             try
             {
-                Acquire(); ;
+                Acquire();
                 return function(_value);
             }
             finally
@@ -79,43 +117,41 @@
         /// Attmepts to acquire the lock. If successful, executes the delegate function.
         /// </summary>
         /// <param name="resources"></param>
-        /// <param name="IsLockHeld"></param>
+        /// <param name="wasLockObtained"></param>
         /// <param name="function"></param>
-        public void TryUseAll(ICriticalResource[] resources, out bool IsLockHeld, CriticalResourceDelegateWithVoidResult function)
+        public void TryUseAll(ICriticalResource[] resources, out bool wasLockObtained, CriticalResourceDelegateWithVoidResult function)
         {
-            var lockObjects = new LockObject[resources.Length];
+            var collection = new CriticalCollection[resources.Length];
 
             if (TryAcquire())
             {
                 try
                 {
-                    for (int i = 0; i < lockObjects.Length; i++)
+                    for (int i = 0; i < collection.Length; i++)
                     {
-                        lockObjects[i] = new(resources[i]);
-                        lockObjects[i].IsLockHeld = lockObjects[i].Resource.TryAcquire();
+                        collection[i] = new(resources[i]);
+                        collection[i].IsLockHeld = collection[i].Resource.TryAcquire();
 
-                        if (lockObjects[i].IsLockHeld == false)
+                        if (collection[i].IsLockHeld == false)
                         {
                             //We didnt get one of the locks, free the ones we did get and bailout.
-                            foreach (var _lockObject in lockObjects.Where(o => o.IsLockHeld))
+                            foreach (var lockObject in collection.Where(o => o.IsLockHeld))
                             {
-                                lockObjects[i].Resource.Release();
-                                _lockObject.IsLockHeld = false;
+                                lockObject.Resource.Release();
                             }
 
-                            IsLockHeld = false;
-
+                            wasLockObtained = false;
                             return;
                         }
                     }
 
                     function(_value);
 
-                    foreach (var lockObject in lockObjects.Where(o => o.IsLockHeld))
+                    foreach (var lockObject in collection.Where(o => o.IsLockHeld))
                     {
                         lockObject.Resource.Release();
                     }
-                    IsLockHeld = true;
+                    wasLockObtained = true;
 
                     return;
                 }
@@ -125,7 +161,7 @@
                 }
             }
 
-            IsLockHeld = false;
+            wasLockObtained = false;
         }
 
         /// <summary>
@@ -133,42 +169,41 @@
         /// </summary>
         /// <param name="resources"></param>
         /// <param name="timeoutMilliseconds"></param>
-        /// <param name="IsLockHeld"></param>
+        /// <param name="wasLockObtained"></param>
         /// <param name="function"></param>
-        public void TryUseAll(ICriticalResource[] resources, int timeoutMilliseconds, out bool IsLockHeld, CriticalResourceDelegateWithVoidResult function)
+        public void TryUseAll(ICriticalResource[] resources, int timeoutMilliseconds, out bool wasLockObtained, CriticalResourceDelegateWithVoidResult function)
         {
-            var lockObjects = new LockObject[resources.Length];
+            var collection = new CriticalCollection[resources.Length];
 
             if (TryAcquire())
             {
                 try
                 {
-                    for (int i = 0; i < lockObjects.Length; i++)
+                    for (int i = 0; i < collection.Length; i++)
                     {
-                        lockObjects[i] = new(resources[i]);
-                        lockObjects[i].IsLockHeld = lockObjects[i].Resource.TryAcquire(timeoutMilliseconds);
+                        collection[i] = new(resources[i]);
+                        collection[i].IsLockHeld = collection[i].Resource.TryAcquire(timeoutMilliseconds);
 
-                        if (lockObjects[i].IsLockHeld == false)
+                        if (collection[i].IsLockHeld == false)
                         {
                             //We didnt get one of the locks, free the ones we did get and bailout.
-                            foreach (var _lockObject in lockObjects.Where(o => o.IsLockHeld))
+                            foreach (var lockObject in collection.Where(o => o.IsLockHeld))
                             {
-                                lockObjects[i].Resource.Release();
-                                _lockObject.IsLockHeld = false;
+                                lockObject.Resource.Release();
                             }
-                            IsLockHeld = false;
 
+                            wasLockObtained = false;
                             return;
                         }
                     }
 
                     function(_value);
 
-                    foreach (var lockObject in lockObjects.Where(o => o.IsLockHeld))
+                    foreach (var lockObject in collection.Where(o => o.IsLockHeld))
                     {
                         lockObject.Resource.Release();
                     }
-                    IsLockHeld = true;
+                    wasLockObtained = true;
 
                     return;
                 }
@@ -178,7 +213,7 @@
                 }
             }
 
-            IsLockHeld = false;
+            wasLockObtained = false;
         }
 
         /// <summary>
@@ -186,44 +221,42 @@
         /// </summary>
         /// <typeparam name="R"></typeparam>
         /// <param name="resources"></param>
-        /// <param name="IsLockHeld"></param>
+        /// <param name="wasLockObtained"></param>
         /// <param name="function"></param>
         /// <returns></returns>
-        public R? TryUseAll<R>(ICriticalResource[] resources, out bool IsLockHeld, CriticalResourceDelegateWithNullableResultT<R> function)
+        public R? TryUseAllNullable<R>(ICriticalResource[] resources, out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R> function)
         {
-            var lockObjects = new LockObject[resources.Length];
+            var collection = new CriticalCollection[resources.Length];
 
             if (TryAcquire())
             {
                 try
                 {
-                    for (int i = 0; i < lockObjects.Length; i++)
+                    for (int i = 0; i < collection.Length; i++)
                     {
-                        lockObjects[i] = new(resources[i]);
-                        lockObjects[i].IsLockHeld = lockObjects[i].Resource.TryAcquire();
+                        collection[i] = new(resources[i]);
+                        collection[i].IsLockHeld = collection[i].Resource.TryAcquire();
 
-                        if (lockObjects[i].IsLockHeld == false)
+                        if (collection[i].IsLockHeld == false)
                         {
                             //We didnt get one of the locks, free the ones we did get and bailout.
-                            foreach (var _lockObject in lockObjects.Where(o => o.IsLockHeld))
+                            foreach (var lockObject in collection.Where(o => o.IsLockHeld))
                             {
-                                lockObjects[i].Resource.Release();
-                                _lockObject.IsLockHeld = false;
+                                lockObject.Resource.Release();
                             }
 
-                            IsLockHeld = false;
-
+                            wasLockObtained = false;
                             return default;
                         }
                     }
 
                     var result = function(_value);
 
-                    foreach (var lockObject in lockObjects.Where(o => o.IsLockHeld))
+                    foreach (var lockObject in collection.Where(o => o.IsLockHeld))
                     {
                         lockObject.Resource.Release();
                     }
-                    IsLockHeld = true;
+                    wasLockObtained = true;
 
                     return result;
                 }
@@ -233,8 +266,7 @@
                 }
             }
 
-            IsLockHeld = false;
-
+            wasLockObtained = false;
             return default;
         }
 
@@ -244,45 +276,43 @@
         /// </summary>
         /// <typeparam name="R"></typeparam>
         /// <param name="resources"></param>
-        /// <param name="IsLockHeld"></param>
+        /// <param name="wasLockObtained"></param>
         /// <param name="defaultValue"></param>
         /// <param name="function"></param>
         /// <returns></returns>
-        public R TryUseAll<R>(ICriticalResource[] resources, out bool IsLockHeld, R defaultValue, CriticalResourceDelegateWithNotNullableResultT<R> function)
+        public R TryUseAll<R>(ICriticalResource[] resources, out bool wasLockObtained, R defaultValue, CriticalResourceDelegateWithNotNullableResultT<R> function)
         {
-            var lockObjects = new LockObject[resources.Length];
+            var collection = new CriticalCollection[resources.Length];
 
             if (TryAcquire())
             {
                 try
                 {
-                    for (int i = 0; i < lockObjects.Length; i++)
+                    for (int i = 0; i < collection.Length; i++)
                     {
-                        lockObjects[i] = new(resources[i]);
-                        lockObjects[i].IsLockHeld = lockObjects[i].Resource.TryAcquire();
+                        collection[i] = new(resources[i]);
+                        collection[i].IsLockHeld = collection[i].Resource.TryAcquire();
 
-                        if (lockObjects[i].IsLockHeld == false)
+                        if (collection[i].IsLockHeld == false)
                         {
                             //We didnt get one of the locks, free the ones we did get and bailout.
-                            foreach (var _lockObject in lockObjects.Where(o => o.IsLockHeld))
+                            foreach (var lockObject in collection.Where(o => o.IsLockHeld))
                             {
-                                lockObjects[i].Resource.Release();
-                                _lockObject.IsLockHeld = false;
+                                lockObject.Resource.Release();
                             }
 
-                            IsLockHeld = false;
-
+                            wasLockObtained = false;
                             return defaultValue;
                         }
                     }
 
                     var result = function(_value);
 
-                    foreach (var lockObject in lockObjects.Where(o => o.IsLockHeld))
+                    foreach (var lockObject in collection.Where(o => o.IsLockHeld))
                     {
                         lockObject.Resource.Release();
                     }
-                    IsLockHeld = true;
+                    wasLockObtained = true;
 
                     return result;
                 }
@@ -292,8 +322,7 @@
                 }
             }
 
-            IsLockHeld = false;
-
+            wasLockObtained = false;
             return defaultValue;
         }
 
@@ -304,44 +333,43 @@
         /// <typeparam name="R"></typeparam>
         /// <param name="resources"></param>
         /// <param name="timeoutMilliseconds"></param>
-        /// <param name="IsLockHeld"></param>
+        /// <param name="wasLockObtained"></param>
         /// <param name="defaultValue"></param>
         /// <param name="function"></param>
         /// <returns></returns>
-        public R? TryUseAll<R>(ICriticalResource[] resources, int timeoutMilliseconds, out bool IsLockHeld, R defaultValue, CriticalResourceDelegateWithNullableResultT<R> function)
+        public R? TryUseAllNullable<R>(ICriticalResource[] resources, int timeoutMilliseconds, out bool wasLockObtained, R defaultValue, CriticalResourceDelegateWithNullableResultT<R> function)
         {
-            var lockObjects = new LockObject[resources.Length];
+            var collection = new CriticalCollection[resources.Length];
 
             if (TryAcquire())
             {
                 try
                 {
-                    for (int i = 0; i < lockObjects.Length; i++)
+                    for (int i = 0; i < collection.Length; i++)
                     {
-                        lockObjects[i] = new(resources[i]);
-                        lockObjects[i].IsLockHeld = lockObjects[i].Resource.TryAcquire(timeoutMilliseconds);
+                        collection[i] = new(resources[i]);
+                        collection[i].IsLockHeld = collection[i].Resource.TryAcquire(timeoutMilliseconds);
 
-                        if (lockObjects[i].IsLockHeld == false)
+                        if (collection[i].IsLockHeld == false)
                         {
                             //We didnt get one of the locks, free the ones we did get and bailout.
-                            foreach (var _lockObject in lockObjects.Where(o => o.IsLockHeld))
+                            foreach (var lockObject in collection.Where(o => o.IsLockHeld))
                             {
-                                lockObjects[i].Resource.Release();
-                                _lockObject.IsLockHeld = false;
+                                lockObject.Resource.Release();
                             }
-                            IsLockHeld = false;
 
+                            wasLockObtained = false;
                             return defaultValue;
                         }
                     }
 
                     var result = function(_value);
 
-                    foreach (var lockObject in lockObjects.Where(o => o.IsLockHeld))
+                    foreach (var lockObject in collection.Where(o => o.IsLockHeld))
                     {
                         lockObject.Resource.Release();
                     }
-                    IsLockHeld = true;
+                    wasLockObtained = true;
 
                     return result;
                 }
@@ -351,8 +379,7 @@
                 }
             }
 
-            IsLockHeld = false;
-
+            wasLockObtained = false;
             return defaultValue;
         }
 
@@ -363,43 +390,42 @@
         /// <typeparam name="R"></typeparam>
         /// <param name="resources"></param>
         /// <param name="timeoutMilliseconds"></param>
-        /// <param name="IsLockHeld"></param>
+        /// <param name="wasLockObtained"></param>
         /// <param name="function"></param>
         /// <returns></returns>
-        public R? TryUseAll<R>(ICriticalResource[] resources, int timeoutMilliseconds, out bool IsLockHeld, CriticalResourceDelegateWithNullableResultT<R> function)
+        public R? TryUseAllNullable<R>(ICriticalResource[] resources, int timeoutMilliseconds, out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R> function)
         {
-            var lockObjects = new LockObject[resources.Length];
+            var collection = new CriticalCollection[resources.Length];
 
             if (TryAcquire())
             {
                 try
                 {
-                    for (int i = 0; i < lockObjects.Length; i++)
+                    for (int i = 0; i < collection.Length; i++)
                     {
-                        lockObjects[i] = new(resources[i]);
-                        lockObjects[i].IsLockHeld = lockObjects[i].Resource.TryAcquire(timeoutMilliseconds);
+                        collection[i] = new(resources[i]);
+                        collection[i].IsLockHeld = collection[i].Resource.TryAcquire(timeoutMilliseconds);
 
-                        if (lockObjects[i].IsLockHeld == false)
+                        if (collection[i].IsLockHeld == false)
                         {
                             //We didnt get one of the locks, free the ones we did get and bailout.
-                            foreach (var _lockObject in lockObjects.Where(o => o.IsLockHeld))
+                            foreach (var lockObject in collection.Where(o => o.IsLockHeld))
                             {
-                                lockObjects[i].Resource.Release();
-                                _lockObject.IsLockHeld = false;
+                                lockObject.Resource.Release();
                             }
-                            IsLockHeld = false;
 
+                            wasLockObtained = false;
                             return default;
                         }
                     }
 
                     var result = function(_value);
 
-                    foreach (var lockObject in lockObjects.Where(o => o.IsLockHeld))
+                    foreach (var lockObject in collection.Where(o => o.IsLockHeld))
                     {
                         lockObject.Resource.Release();
                     }
-                    IsLockHeld = true;
+                    wasLockObtained = true;
 
                     return result;
                 }
@@ -409,8 +435,7 @@
                 }
             }
 
-            IsLockHeld = false;
-
+            wasLockObtained = false;
             return default;
         }
 
@@ -490,6 +515,7 @@
         public void UseAll(ICriticalResource[] resources, CriticalResourceDelegateWithVoidResult function)
         {
             Acquire();
+
             try
             {
                 foreach (var res in resources)
@@ -764,7 +790,6 @@
         /// <param name="timeoutMilliseconds"></param>
         /// <param name="function"></param>
         /// <returns></returns>
-
         public R TryUse<R>(out bool wasLockObtained, R defaultValue, int timeoutMilliseconds, CriticalResourceDelegateWithNotNullableResultT<R> function)
         {
             wasLockObtained = false;
@@ -797,7 +822,6 @@
         /// <param name="timeoutMilliseconds"></param>
         /// <param name="function"></param>
         /// <returns></returns>
-
         public R TryUse<R>(R defaultValue, int timeoutMilliseconds, CriticalResourceDelegateWithNotNullableResultT<R> function)
         {
             bool wasLockObtained = false;
@@ -827,47 +851,23 @@
         /// </summary>
         /// <param name="timeoutMilliseconds"></param>
         /// <returns></returns>
-        public bool TryAcquire(int timeoutMilliseconds)
-        {
-            if (Monitor.TryEnter(this, timeoutMilliseconds))
-            {
-                OwnerThread = Thread.CurrentThread;
-                return true;
-            }
-            return false;
-        }
+        public bool TryAcquire(int timeoutMilliseconds) => _criticalSection.TryAcquire(timeoutMilliseconds);
 
         /// <summary>
         /// Internal use only. Attempts to acquire the lock.
         /// </summary>
         /// <returns></returns>
-        public bool TryAcquire()
-        {
-            if (Monitor.TryEnter(this))
-            {
-                OwnerThread = Thread.CurrentThread;
-                return true;
-            }
-            return false;
-        }
+        public bool TryAcquire() => _criticalSection.TryAcquire();
 
         /// <summary>
         /// Internal use only. Blocks until the lock is acquired.
         /// </summary>
-        public void Acquire()
-        {
-            Monitor.Enter(this);
-            OwnerThread = Thread.CurrentThread;
-        }
+        public void Acquire() => _criticalSection.Acquire();
 
         /// <summary>
         /// Internal use only. Releases the previously acquired lock.
         /// </summary>
-        public void Release()
-        {
-            OwnerThread = null;
-            Monitor.Exit(this);
-        }
+        public void Release() => _criticalSection.Release();
 
         #endregion
     }
