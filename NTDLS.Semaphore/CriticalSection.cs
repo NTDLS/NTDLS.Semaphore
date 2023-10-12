@@ -5,16 +5,34 @@
     /// </summary>
     public class CriticalSection : ICriticalResource
     {
-#if DEBUG
-        public readonly static Dictionary<string, ICriticalResource> GlobalLocks = new();
-#endif
+        private static bool _enableGlobalLockRegistration = false;
+        private static bool _enableThreadOwnershipTracking = false;
+
+        /// <summary>
+        /// Enables a dictonary of all threads that own locks. This can be handy when identifying deadlocks and race conditions.
+        /// Once enabled, the tracking is attributed to all critical sections for the life of the applicaiton.
+        /// </summary>
+        public static void EnableGlobalLockRegistration() => _enableGlobalLockRegistration = true;
+
+        /// <summary>
+        /// Enables tracking of the current thread that owns the lock. This is only tracked if enabled by a call to EnableThreadOwnershipTracking().
+        /// </summary>
+        public static void EnableThreadOwnershipTracking() => _enableThreadOwnershipTracking = true;
 
         public delegate void CriticalSectionDelegateWithVoidResult();
         public delegate T? CriticalSectionDelegateWithNullableResultT<T>();
         public delegate T CriticalSectionDelegateWithNotNullableResultT<T>();
 
         /// <summary>
-        /// Identifies the current thread that owns the lock.
+        /// A dictonary of all threads that own locks. This can be handy when identifying deadlocks and race conditions.
+        /// This is only tracked if enabled by a call to EnableGlobalLockRegistration().
+        /// Once enabled, the tracking is attributed to all critical sections for the life of the applicaiton.
+        /// </summary>
+        public readonly static Dictionary<string, ICriticalResource> GlobalLocks = new();
+
+        /// <summary>
+        /// Identifies the current thread that owns the lock. This is only tracked if enabled by a call to EnableThreadOwnershipTracking().
+        /// Once enabled, the tracking is attributed to all critical sections for the life of the applicaiton.
         /// </summary>
         public Thread? OwnerThread { get; private set; }
         int _reentrantLevel = 0;
@@ -361,18 +379,22 @@
         {
             if (Monitor.TryEnter(this, timeoutMilliseconds))
             {
-                OwnerThread = Thread.CurrentThread;
+                if (_enableThreadOwnershipTracking)
+                {
+                    OwnerThread = Thread.CurrentThread;
+                }
                 _reentrantLevel++;
 
-#if DEBUG
-                if (_reentrantLevel == 1)
+                if (_enableGlobalLockRegistration)
                 {
-                    lock (GlobalLocks)
+                    if (_reentrantLevel == 1)
                     {
-                        GlobalLocks.Add($"CS:{OwnerThread.ManagedThreadId}:{GetHashCode()}", this);
+                        lock (GlobalLocks)
+                        {
+                            GlobalLocks.Add($"CS:{Thread.CurrentThread.ManagedThreadId}:{GetHashCode()}", this);
+                        }
                     }
                 }
-#endif
                 return true;
             }
             return false;
@@ -386,18 +408,22 @@
         {
             if (Monitor.TryEnter(this))
             {
-                OwnerThread = Thread.CurrentThread;
+                if (_enableThreadOwnershipTracking)
+                {
+                    OwnerThread = Thread.CurrentThread;
+                }
                 _reentrantLevel++;
 
-#if DEBUG
-                if (_reentrantLevel == 1)
+                if (_enableGlobalLockRegistration)
                 {
-                    lock (GlobalLocks)
+                    if (_reentrantLevel == 1)
                     {
-                        GlobalLocks.Add($"CS:{OwnerThread.ManagedThreadId}:{GetHashCode()}", this);
+                        lock (GlobalLocks)
+                        {
+                            GlobalLocks.Add($"CS:{Thread.CurrentThread.ManagedThreadId}:{GetHashCode()}", this);
+                        }
                     }
                 }
-#endif
 
                 return true;
             }
@@ -410,18 +436,22 @@
         public void Acquire()
         {
             Monitor.Enter(this);
-            OwnerThread = Thread.CurrentThread;
+            if (_enableThreadOwnershipTracking)
+            {
+                OwnerThread = Thread.CurrentThread;
+            }
             _reentrantLevel++;
 
-#if DEBUG
-            if (_reentrantLevel == 1)
+            if (_enableGlobalLockRegistration)
             {
-                lock (GlobalLocks)
+                if (_reentrantLevel == 1)
                 {
-                    GlobalLocks.Add($"CS:{OwnerThread.ManagedThreadId}:{GetHashCode()}", this);
+                    lock (GlobalLocks)
+                    {
+                        GlobalLocks.Add($"CS:{Thread.CurrentThread.ManagedThreadId}:{GetHashCode()}", this);
+                    }
                 }
             }
-#endif
         }
 
         /// <summary>
@@ -431,20 +461,25 @@
         {
             _reentrantLevel--;
 
-            if (OwnerThread == null)
+            if (_enableThreadOwnershipTracking && OwnerThread == null)
             {
                 throw new InvalidOperationException("Cannot release an unowned lock.");
             }
 
+
             if (_reentrantLevel == 0)
             {
-#if DEBUG
-                lock (GlobalLocks)
+                if (_enableGlobalLockRegistration)
                 {
-                    GlobalLocks.Remove($"CS:{OwnerThread.ManagedThreadId}:{GetHashCode()}");
+                    lock (GlobalLocks)
+                    {
+                        GlobalLocks.Remove($"CS:{Thread.CurrentThread.ManagedThreadId}:{GetHashCode()}");
+                    }
                 }
-#endif
-                OwnerThread = null;
+                if (_enableThreadOwnershipTracking)
+                {
+                    OwnerThread = null;
+                }
             }
             else if (_reentrantLevel < 0)
             {
