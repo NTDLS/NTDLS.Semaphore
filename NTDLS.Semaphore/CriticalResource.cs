@@ -24,8 +24,26 @@
         private readonly ICriticalResource _criticalSection;
         private readonly T _value;
 
+        /// <summary>
+        /// Delegate for executions that do not require a return value.
+        /// </summary>
+        /// <param name="obj">The variable that is being protected. It can be safely modified here.</param>
         public delegate void CriticalResourceDelegateWithVoidResult(T obj);
+
+        /// <summary>
+        /// Delegate for executions that require a nullable return value.
+        /// </summary>
+        /// <typeparam name="R">The type of the return value.</typeparam>
+        /// <param name="obj">The variable that is being protected. It can be safely modified here.</param>
+        /// <returns></returns>
         public delegate R? CriticalResourceDelegateWithNullableResultT<R>(T obj);
+
+        /// <summary>
+        /// Delegate for executions that require a non-nullable return value.
+        /// </summary>
+        /// <typeparam name="R">The type of the return value.</typeparam>
+        /// <param name="obj">The variable that is being protected. It can be safely modified here.</param>
+        /// <returns></returns>
         public delegate R CriticalResourceDelegateWithNotNullableResultT<R>(T obj);
 
         /// <summary>
@@ -582,7 +600,6 @@
         /// <summary>
         /// Attempts to acquire the lock, if successful then executes the delegate function.
         /// </summary>
-        /// <param name="wasLockObtained"></param>
         /// <param name="function"></param>
         public void TryUse(CriticalResourceDelegateWithVoidResult function)
         {
@@ -635,7 +652,6 @@
         /// <summary>
         /// Attempts to acquire the lock for the given number of milliseconds, if successful then executes the delegate function.
         /// </summary>
-        /// <param name="wasLockObtained"></param>
         /// <param name="timeoutMilliseconds"></param>
         /// <param name="function"></param>
         public void TryUse(int timeoutMilliseconds, CriticalResourceDelegateWithVoidResult function)
@@ -755,7 +771,6 @@
         /// Otherwise returns the supplied default value.
         /// </summary>
         /// <typeparam name="R"></typeparam>
-        /// <param name="wasLockObtained"></param>
         /// <param name="defaultValue"></param>
         /// <param name="function"></param>
         /// <returns></returns>
@@ -817,7 +832,6 @@
         /// Otherwise returns the supplied default value.
         /// </summary>
         /// <typeparam name="R"></typeparam>
-        /// <param name="wasLockObtained"></param>
         /// <param name="defaultValue"></param>
         /// <param name="timeoutMilliseconds"></param>
         /// <param name="function"></param>

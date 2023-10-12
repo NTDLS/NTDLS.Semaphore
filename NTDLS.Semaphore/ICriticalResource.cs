@@ -1,5 +1,8 @@
 ﻿namespace NTDLS.Semaphore
 {
+    /// <summary>
+    /// Public interface that all lock types must implement.
+    /// </summary>
     public interface ICriticalResource
     {
         /// <summary>

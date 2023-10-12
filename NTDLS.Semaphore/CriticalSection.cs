@@ -19,8 +19,23 @@
         /// </summary>
         public static void EnableThreadOwnershipTracking() => _enableThreadOwnershipTracking = true;
 
+        /// <summary>
+        /// Delegate for executions that do not require a return value.
+        /// </summary>
         public delegate void CriticalSectionDelegateWithVoidResult();
+
+        /// <summary>
+        /// Delegate for executions that require a nullable return value.
+        /// </summary>
+        /// <typeparam name="T">The type of the return value.</typeparam>
+        /// <returns></returns>
         public delegate T? CriticalSectionDelegateWithNullableResultT<T>();
+
+        /// <summary>
+        /// Delegate for executions that require a non-nullable return value.
+        /// </summary>
+        /// <typeparam name="T">The type of the return value.</typeparam>
+        /// <returns></returns>
         public delegate T CriticalSectionDelegateWithNotNullableResultT<T>();
 
         /// <summary>
