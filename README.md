@@ -1,4 +1,7 @@
 # NTDLS.Semaphore
+
+📦 Be sure to check out the NuGet pacakge: https://www.nuget.org/packages/NTDLS.Semaphore
+
 Provides various classes for to ensure sequential mult-threaded access to variables or sections of code.
 
 >**Auto-release CriticalResource using inline execution example:**
