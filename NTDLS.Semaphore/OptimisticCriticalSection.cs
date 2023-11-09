@@ -16,6 +16,20 @@
         /// </summary>
         public delegate void CriticalResourceDelegateWithVoidResult();
 
+        /// <summary>
+        /// Delegate for executions that require a nullable return value.
+        /// </summary>
+        /// <typeparam name="R">The type of the return value.</typeparam>
+        /// <returns></returns>
+        public delegate R? CriticalResourceDelegateWithNullableResultT<R>();
+
+        /// <summary>
+        /// Delegate for executions that require a non-nullable return value.
+        /// </summary>
+        /// <typeparam name="R">The type of the return value.</typeparam>
+        /// <returns></returns>
+        public delegate R CriticalResourceDelegateWithNotNullableResultT<R>();
+
         #endregion
 
         #region Local types.
@@ -451,6 +465,477 @@
                 }
             }
         }
+
+
+        #endregion
+
+        #region Read/Write/TryRead/TryWrite overloads (with returns).
+
+        /// <summary>
+        /// Blocks until the lock is acquired then executes the delegate function.
+        /// </summary>
+        /// <param name="function"></param>
+        public R Read<R>(CriticalResourceDelegateWithNotNullableResultT<R> function)
+        {
+            try
+            {
+                Acquire(LockIntention.Readonly);
+                return function();
+            }
+            finally
+            {
+                Release(LockIntention.Readonly);
+            }
+        }
+
+        /// <summary>
+        /// Blocks until the lock is acquired then executes the delegate function.
+        /// </summary>
+        /// <param name="function"></param>
+        public R Write<R>(CriticalResourceDelegateWithNotNullableResultT<R> function)
+        {
+            try
+            {
+                Acquire(LockIntention.Exclusive);
+                return function();
+            }
+            finally
+            {
+                Release(LockIntention.Exclusive);
+            }
+        }
+
+        /// <summary>
+        /// Attempts to acquire the lock, if successful then executes the delegate function.
+        /// </summary>
+        /// <param name="wasLockObtained"></param>
+        /// <param name="defaultValue"></param>
+        /// <param name="function"></param>
+        public R TryRead<R>(out bool wasLockObtained, R defaultValue, CriticalResourceDelegateWithNotNullableResultT<R> function)
+        {
+            wasLockObtained = false;
+            try
+            {
+                wasLockObtained = TryAcquire(LockIntention.Readonly);
+                if (wasLockObtained)
+                {
+                    return function();
+                }
+                return defaultValue;
+            }
+            finally
+            {
+                if (wasLockObtained)
+                {
+                    Release(LockIntention.Readonly);
+                }
+            }
+        }
+
+
+        /// <summary>
+        /// Attempts to acquire the lock, if successful then executes the delegate function.
+        /// </summary>
+        /// <param name="wasLockObtained"></param>
+        /// <param name="defaultValue"></param>
+        /// <param name="function"></param>
+        public R TryWrite<R>(out bool wasLockObtained, R defaultValue, CriticalResourceDelegateWithNotNullableResultT<R> function)
+        {
+            wasLockObtained = false;
+            try
+            {
+                wasLockObtained = TryAcquire(LockIntention.Exclusive);
+                if (wasLockObtained)
+                {
+                    return function();
+                }
+                return defaultValue;
+            }
+            finally
+            {
+                if (wasLockObtained)
+                {
+                    Release(LockIntention.Exclusive);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Attempts to acquire the lock, if successful then executes the delegate function.
+        /// </summary>
+        /// <param name="defaultValue"></param>
+        /// <param name="function"></param>
+        public R TryRead<R>(R defaultValue, CriticalResourceDelegateWithNotNullableResultT<R> function)
+        {
+            bool wasLockObtained = false;
+            try
+            {
+                wasLockObtained = TryAcquire(LockIntention.Readonly);
+                if (wasLockObtained)
+                {
+                    return function();
+                }
+                return defaultValue;
+            }
+            finally
+            {
+                if (wasLockObtained)
+                {
+                    Release(LockIntention.Readonly);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Attempts to acquire the lock, if successful then executes the delegate function.
+        /// </summary>
+        /// <param name="defaultValue"></param>
+        /// <param name="function"></param>
+        public R TryWrite<R>(R defaultValue, CriticalResourceDelegateWithNotNullableResultT<R> function)
+        {
+            bool wasLockObtained = false;
+            try
+            {
+                wasLockObtained = TryAcquire(LockIntention.Exclusive);
+                if (wasLockObtained)
+                {
+                    return function();
+                }
+                return defaultValue;
+            }
+            finally
+            {
+                if (wasLockObtained)
+                {
+                    Release(LockIntention.Exclusive);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Attempts to acquire the lock for the given number of milliseconds, if successful then executes the delegate function.
+        /// </summary>
+        /// <param name="wasLockObtained"></param>
+        /// <param name="timeoutMilliseconds"></param>
+        /// <param name="defaultValue"></param>
+        /// <param name="function"></param>
+        public R TryRead<R>(out bool wasLockObtained, int timeoutMilliseconds, R defaultValue, CriticalResourceDelegateWithNotNullableResultT<R> function)
+        {
+            wasLockObtained = false;
+            try
+            {
+                wasLockObtained = TryAcquire(LockIntention.Readonly, timeoutMilliseconds);
+                if (wasLockObtained)
+                {
+                    return function();
+                }
+                return defaultValue;
+            }
+            finally
+            {
+                if (wasLockObtained)
+                {
+                    Release(LockIntention.Readonly);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Attempts to acquire the lock for the given number of milliseconds, if successful then executes the delegate function.
+        /// </summary>
+        /// <param name="wasLockObtained"></param>
+        /// <param name="timeoutMilliseconds"></param>
+        /// <param name="defaultValue"></param>
+        /// <param name="function"></param>
+        public R TryWrite<R>(out bool wasLockObtained, int timeoutMilliseconds, R defaultValue, CriticalResourceDelegateWithNotNullableResultT<R> function)
+        {
+            wasLockObtained = false;
+            try
+            {
+                wasLockObtained = TryAcquire(LockIntention.Exclusive, timeoutMilliseconds);
+                if (wasLockObtained)
+                {
+                    return function();
+                }
+                return defaultValue;
+            }
+            finally
+            {
+                if (wasLockObtained)
+                {
+                    Release(LockIntention.Exclusive);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Attempts to acquire the lock for the given number of milliseconds, if successful then executes the delegate function.
+        /// </summary>
+        /// <param name="timeoutMilliseconds"></param>
+        /// <param name="defaultValue"></param>
+        /// <param name="function"></param>
+        public R TryRead<R>(int timeoutMilliseconds, R defaultValue, CriticalResourceDelegateWithNotNullableResultT<R> function)
+        {
+            bool wasLockObtained = false;
+            try
+            {
+                wasLockObtained = TryAcquire(LockIntention.Readonly, timeoutMilliseconds);
+                if (wasLockObtained)
+                {
+                    return function();
+                }
+                return defaultValue;
+            }
+            finally
+            {
+                if (wasLockObtained)
+                {
+                    Release(LockIntention.Readonly);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Attempts to acquire the lock for the given number of milliseconds, if successful then executes the delegate function.
+        /// </summary>
+        /// <param name="timeoutMilliseconds"></param>
+        /// <param name="defaultValue"></param>
+        /// <param name="function"></param>
+        public R TryWrite<R>(int timeoutMilliseconds, R defaultValue, CriticalResourceDelegateWithNotNullableResultT<R> function)
+        {
+            bool wasLockObtained = false;
+            try
+            {
+                wasLockObtained = TryAcquire(LockIntention.Exclusive, timeoutMilliseconds);
+                if (wasLockObtained)
+                {
+                    return function();
+                }
+                return defaultValue;
+            }
+            finally
+            {
+                if (wasLockObtained)
+                {
+                    Release(LockIntention.Exclusive);
+                }
+            }
+        }
+
+
+        #endregion
+
+        #region Read/Write/TryRead/TryWrite overloads (nullable)
+
+        /// <summary>
+        /// Attempts to acquire the lock, if successful then executes the delegate function.
+        /// </summary>
+        /// <param name="wasLockObtained"></param>
+        /// <param name="function"></param>
+        public R? TryReadNullable<R>(out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R> function)
+        {
+            wasLockObtained = false;
+            try
+            {
+                wasLockObtained = TryAcquire(LockIntention.Readonly);
+                if (wasLockObtained)
+                {
+                    return function();
+                }
+                return default(R);
+            }
+            finally
+            {
+                if (wasLockObtained)
+                {
+                    Release(LockIntention.Readonly);
+                }
+            }
+        }
+
+
+        /// <summary>
+        /// Attempts to acquire the lock, if successful then executes the delegate function.
+        /// </summary>
+        /// <param name="wasLockObtained"></param>
+        /// <param name="function"></param>
+        public R? TryWriteNullable<R>(out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R> function)
+        {
+            wasLockObtained = false;
+            try
+            {
+                wasLockObtained = TryAcquire(LockIntention.Exclusive);
+                if (wasLockObtained)
+                {
+                    return function();
+                }
+                return default(R);
+            }
+            finally
+            {
+                if (wasLockObtained)
+                {
+                    Release(LockIntention.Exclusive);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Attempts to acquire the lock, if successful then executes the delegate function.
+        /// </summary>
+        /// <param name="function"></param>
+        public R? TryReadNullable<R>(CriticalResourceDelegateWithNullableResultT<R> function)
+        {
+            bool wasLockObtained = false;
+            try
+            {
+                wasLockObtained = TryAcquire(LockIntention.Readonly);
+                if (wasLockObtained)
+                {
+                    return function();
+                }
+                return default(R);
+            }
+            finally
+            {
+                if (wasLockObtained)
+                {
+                    Release(LockIntention.Readonly);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Attempts to acquire the lock, if successful then executes the delegate function.
+        /// </summary>
+        /// <param name="function"></param>
+        public R? TryWriteNullable<R>(CriticalResourceDelegateWithNullableResultT<R> function)
+        {
+            bool wasLockObtained = false;
+            try
+            {
+                wasLockObtained = TryAcquire(LockIntention.Exclusive);
+                if (wasLockObtained)
+                {
+                    return function();
+                }
+                return default(R);
+            }
+            finally
+            {
+                if (wasLockObtained)
+                {
+                    Release(LockIntention.Exclusive);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Attempts to acquire the lock for the given number of milliseconds, if successful then executes the delegate function.
+        /// </summary>
+        /// <param name="wasLockObtained"></param>
+        /// <param name="timeoutMilliseconds"></param>
+        /// <param name="function"></param>
+        public R? TryReadNullable<R>(out bool wasLockObtained, int timeoutMilliseconds, CriticalResourceDelegateWithNullableResultT<R> function)
+        {
+            wasLockObtained = false;
+            try
+            {
+                wasLockObtained = TryAcquire(LockIntention.Readonly, timeoutMilliseconds);
+                if (wasLockObtained)
+                {
+                    return function();
+                }
+                return default(R);
+            }
+            finally
+            {
+                if (wasLockObtained)
+                {
+                    Release(LockIntention.Readonly);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Attempts to acquire the lock for the given number of milliseconds, if successful then executes the delegate function.
+        /// </summary>
+        /// <param name="wasLockObtained"></param>
+        /// <param name="timeoutMilliseconds"></param>
+        /// <param name="function"></param>
+        public R? TryWriteNullable<R>(out bool wasLockObtained, int timeoutMilliseconds, CriticalResourceDelegateWithNullableResultT<R> function)
+        {
+            wasLockObtained = false;
+            try
+            {
+                wasLockObtained = TryAcquire(LockIntention.Exclusive, timeoutMilliseconds);
+                if (wasLockObtained)
+                {
+                    return function();
+                }
+                return default(R);
+            }
+            finally
+            {
+                if (wasLockObtained)
+                {
+                    Release(LockIntention.Exclusive);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Attempts to acquire the lock for the given number of milliseconds, if successful then executes the delegate function.
+        /// </summary>
+        /// <param name="timeoutMilliseconds"></param>
+        /// <param name="function"></param>
+        public R? TryReadNullable<R>(int timeoutMilliseconds, CriticalResourceDelegateWithNullableResultT<R> function)
+        {
+            bool wasLockObtained = false;
+            try
+            {
+                wasLockObtained = TryAcquire(LockIntention.Readonly, timeoutMilliseconds);
+                if (wasLockObtained)
+                {
+                    return function();
+                }
+                return default(R);
+            }
+            finally
+            {
+                if (wasLockObtained)
+                {
+                    Release(LockIntention.Readonly);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Attempts to acquire the lock for the given number of milliseconds, if successful then executes the delegate function.
+        /// </summary>
+        /// <param name="timeoutMilliseconds"></param>
+        /// <param name="function"></param>
+        public R? TryWriteNullable<R>(int timeoutMilliseconds, CriticalResourceDelegateWithNullableResultT<R> function)
+        {
+            bool wasLockObtained = false;
+            try
+            {
+                wasLockObtained = TryAcquire(LockIntention.Exclusive, timeoutMilliseconds);
+                if (wasLockObtained)
+                {
+                    return function();
+                }
+                return default(R);
+            }
+            finally
+            {
+                if (wasLockObtained)
+                {
+                    Release(LockIntention.Exclusive);
+                }
+            }
+        }
+
 
         #endregion
     }
