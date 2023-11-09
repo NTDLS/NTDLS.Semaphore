@@ -15,6 +15,7 @@
     <PackageTags>threading;critical-section;semaphore;parallel-execution;sequential-execution</PackageTags>
     <PackageReleaseNotes>
       Added OptimisticSemaphore to allow for concurrent reads.
+      Added OptimisticSemaphore Read/Write all support.
       Added shared critical section support for optimistic semaphores.
       Soft breaking changes with class renames and namespace movements.
       Cleaned up what should have been private interface methods from CriticalSection.
@@ -23,9 +24,9 @@
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <Authors>NetworkDLS</Authors>
     <Company>NetworkDLS</Company>
-    <AssemblyVersion>2.1.0</AssemblyVersion>
-    <FileVersion>2.1.0</FileVersion>
-    <VersionPrefix>2.1.0</VersionPrefix>
+    <AssemblyVersion>2.2.0</AssemblyVersion>
+    <FileVersion>2.2.0</FileVersion>
+    <VersionPrefix>2.2.0</VersionPrefix>
     <version></version>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>Logo.png</PackageIcon>

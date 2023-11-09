@@ -12,8 +12,22 @@ namespace NTDLS.Semaphore
     public class OptimisticSemaphore<T> where T : class, new()
     {
         private readonly T _value;
+        private readonly IOptimisticCriticalSection _criticalSection;
 
-        private IOptimisticCriticalSection _criticalSection;
+        #region Local Types.
+
+        private class CriticalCollection
+        {
+            public IOptimisticCriticalSection Resource { get; set; }
+            public bool IsLockHeld { get; set; } = false;
+
+            public CriticalCollection(IOptimisticCriticalSection resource)
+            {
+                Resource = resource;
+            }
+        }
+
+        #endregion
 
         #region Delegates.
 
@@ -40,6 +54,8 @@ namespace NTDLS.Semaphore
         public delegate R CriticalResourceDelegateWithNotNullableResultT<R>(T obj);
 
         #endregion
+
+        #region Constructors.
 
         /// <summary>
         /// Initializes a new optimistic semaphore that envelopes a variable.
@@ -83,6 +99,8 @@ namespace NTDLS.Semaphore
             _value = value;
             _criticalSection = criticalSection;
         }
+
+        #endregion
 
         #region Read/Write/TryRead/TryWrite overloads.
 
@@ -770,6 +788,862 @@ namespace NTDLS.Semaphore
 
             return defaultValue;
         }
+
+        #endregion
+
+        #region Use All (Write)
+
+        /// <summary>
+        /// Attmepts to acquire the lock. If successful, executes the delegate function.
+        /// </summary>
+        /// <param name="resources"></param>
+        /// <param name="wasLockObtained"></param>
+        /// <param name="function"></param>
+        public void TryWriteAll(IOptimisticCriticalSection[] resources, out bool wasLockObtained, CriticalResourceDelegateWithVoidResult function)
+        {
+            var collection = new CriticalCollection[resources.Length];
+
+            if (_criticalSection.TryAcquire(LockIntention.Exclusive))
+            {
+                try
+                {
+                    for (int i = 0; i < collection.Length; i++)
+                    {
+                        collection[i] = new(resources[i]);
+                        collection[i].IsLockHeld = collection[i].Resource.TryAcquire(LockIntention.Exclusive);
+
+                        if (collection[i].IsLockHeld == false)
+                        {
+                            //We didnt get one of the locks, free the ones we did get and bailout.
+                            foreach (var lockObject in collection.Where(o => o.IsLockHeld))
+                            {
+                                lockObject.Resource.Release(LockIntention.Exclusive);
+                            }
+
+                            wasLockObtained = false;
+                            return;
+                        }
+                    }
+
+                    function(_value);
+
+                    foreach (var lockObject in collection.Where(o => o.IsLockHeld))
+                    {
+                        lockObject.Resource.Release(LockIntention.Exclusive);
+                    }
+                    wasLockObtained = true;
+
+                    return;
+                }
+                finally
+                {
+                    _criticalSection.Release(LockIntention.Exclusive);
+                }
+            }
+
+            wasLockObtained = false;
+        }
+
+        /// <summary>
+        /// Attmepts to acquire the lock for the specified number of milliseconds. If successful, executes the delegate function.
+        /// </summary>
+        /// <param name="resources"></param>
+        /// <param name="timeoutMilliseconds"></param>
+        /// <param name="wasLockObtained"></param>
+        /// <param name="function"></param>
+        public void TryWriteAll(IOptimisticCriticalSection[] resources, int timeoutMilliseconds, out bool wasLockObtained, CriticalResourceDelegateWithVoidResult function)
+        {
+            var collection = new CriticalCollection[resources.Length];
+
+            if (_criticalSection.TryAcquire(LockIntention.Exclusive))
+            {
+                try
+                {
+                    for (int i = 0; i < collection.Length; i++)
+                    {
+                        collection[i] = new(resources[i]);
+                        collection[i].IsLockHeld = collection[i].Resource.TryAcquire(LockIntention.Exclusive, timeoutMilliseconds);
+
+                        if (collection[i].IsLockHeld == false)
+                        {
+                            //We didnt get one of the locks, free the ones we did get and bailout.
+                            foreach (var lockObject in collection.Where(o => o.IsLockHeld))
+                            {
+                                lockObject.Resource.Release(LockIntention.Exclusive);
+                            }
+
+                            wasLockObtained = false;
+                            return;
+                        }
+                    }
+
+                    function(_value);
+
+                    foreach (var lockObject in collection.Where(o => o.IsLockHeld))
+                    {
+                        lockObject.Resource.Release(LockIntention.Exclusive);
+                    }
+                    wasLockObtained = true;
+
+                    return;
+                }
+                finally
+                {
+                    _criticalSection.Release(LockIntention.Exclusive);
+                }
+            }
+
+            wasLockObtained = false;
+        }
+
+        /// <summary>
+        /// Attmepts to acquire the lock. If successful, executes the delegate function and returns the nullable value from the delegate function.
+        /// </summary>
+        /// <typeparam name="R"></typeparam>
+        /// <param name="resources"></param>
+        /// <param name="wasLockObtained"></param>
+        /// <param name="function"></param>
+        /// <returns></returns>
+        public R? TryWriteAll<R>(IOptimisticCriticalSection[] resources, out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R> function)
+        {
+            var collection = new CriticalCollection[resources.Length];
+
+            if (_criticalSection.TryAcquire(LockIntention.Exclusive))
+            {
+                try
+                {
+                    for (int i = 0; i < collection.Length; i++)
+                    {
+                        collection[i] = new(resources[i]);
+                        collection[i].IsLockHeld = collection[i].Resource.TryAcquire(LockIntention.Exclusive);
+
+                        if (collection[i].IsLockHeld == false)
+                        {
+                            //We didnt get one of the locks, free the ones we did get and bailout.
+                            foreach (var lockObject in collection.Where(o => o.IsLockHeld))
+                            {
+                                lockObject.Resource.Release(LockIntention.Exclusive);
+                            }
+
+                            wasLockObtained = false;
+                            return default;
+                        }
+                    }
+
+                    var result = function(_value);
+
+                    foreach (var lockObject in collection.Where(o => o.IsLockHeld))
+                    {
+                        lockObject.Resource.Release(LockIntention.Exclusive);
+                    }
+                    wasLockObtained = true;
+
+                    return result;
+                }
+                finally
+                {
+                    _criticalSection.Release(LockIntention.Exclusive);
+                }
+            }
+
+            wasLockObtained = false;
+            return default;
+        }
+
+        /// <summary>
+        /// Attmepts to acquire the lock. If successful, executes the delegate function and returns the non-nullable value from the delegate function.
+        /// Otherwise returns the given default value.
+        /// </summary>
+        /// <typeparam name="R"></typeparam>
+        /// <param name="resources"></param>
+        /// <param name="wasLockObtained"></param>
+        /// <param name="defaultValue"></param>
+        /// <param name="function"></param>
+        /// <returns></returns>
+        public R TryWriteAll<R>(IOptimisticCriticalSection[] resources, out bool wasLockObtained, R defaultValue, CriticalResourceDelegateWithNotNullableResultT<R> function)
+        {
+            var collection = new CriticalCollection[resources.Length];
+
+            if (_criticalSection.TryAcquire(LockIntention.Exclusive))
+            {
+                try
+                {
+                    for (int i = 0; i < collection.Length; i++)
+                    {
+                        collection[i] = new(resources[i]);
+                        collection[i].IsLockHeld = collection[i].Resource.TryAcquire(LockIntention.Exclusive);
+
+                        if (collection[i].IsLockHeld == false)
+                        {
+                            //We didnt get one of the locks, free the ones we did get and bailout.
+                            foreach (var lockObject in collection.Where(o => o.IsLockHeld))
+                            {
+                                lockObject.Resource.Release(LockIntention.Exclusive);
+                            }
+
+                            wasLockObtained = false;
+                            return defaultValue;
+                        }
+                    }
+
+                    var result = function(_value);
+
+                    foreach (var lockObject in collection.Where(o => o.IsLockHeld))
+                    {
+                        lockObject.Resource.Release(LockIntention.Exclusive);
+                    }
+                    wasLockObtained = true;
+
+                    return result;
+                }
+                finally
+                {
+                    _criticalSection.Release(LockIntention.Exclusive);
+                }
+            }
+
+            wasLockObtained = false;
+            return defaultValue;
+        }
+
+        /// <summary>
+        /// Attmepts to acquire the lock for the given number of milliseconds. If successful, executes the delegate function and
+        /// returns the non-nullable value from the delegate function. Otherwise returns the given default value.
+        /// </summary>
+        /// <typeparam name="R"></typeparam>
+        /// <param name="resources"></param>
+        /// <param name="timeoutMilliseconds"></param>
+        /// <param name="wasLockObtained"></param>
+        /// <param name="defaultValue"></param>
+        /// <param name="function"></param>
+        /// <returns></returns>
+        public R? TryWriteAll<R>(IOptimisticCriticalSection[] resources, int timeoutMilliseconds, out bool wasLockObtained, R defaultValue, CriticalResourceDelegateWithNullableResultT<R> function)
+        {
+            var collection = new CriticalCollection[resources.Length];
+
+            if (_criticalSection.TryAcquire(LockIntention.Exclusive))
+            {
+                try
+                {
+                    for (int i = 0; i < collection.Length; i++)
+                    {
+                        collection[i] = new(resources[i]);
+                        collection[i].IsLockHeld = collection[i].Resource.TryAcquire(LockIntention.Exclusive, timeoutMilliseconds);
+
+                        if (collection[i].IsLockHeld == false)
+                        {
+                            //We didnt get one of the locks, free the ones we did get and bailout.
+                            foreach (var lockObject in collection.Where(o => o.IsLockHeld))
+                            {
+                                lockObject.Resource.Release(LockIntention.Exclusive);
+                            }
+
+                            wasLockObtained = false;
+                            return defaultValue;
+                        }
+                    }
+
+                    var result = function(_value);
+
+                    foreach (var lockObject in collection.Where(o => o.IsLockHeld))
+                    {
+                        lockObject.Resource.Release(LockIntention.Exclusive);
+                    }
+                    wasLockObtained = true;
+
+                    return result;
+                }
+                finally
+                {
+                    _criticalSection.Release(LockIntention.Exclusive);
+                }
+            }
+
+            wasLockObtained = false;
+            return defaultValue;
+        }
+
+        /// <summary>
+        /// Attmepts to acquire the lock for the given number of milliseconds. If successful, executes the delegate function and
+        /// returns the nullable value from the delegate function. Otherwise returns null.
+        /// </summary>
+        /// <typeparam name="R"></typeparam>
+        /// <param name="resources"></param>
+        /// <param name="timeoutMilliseconds"></param>
+        /// <param name="wasLockObtained"></param>
+        /// <param name="function"></param>
+        /// <returns></returns>
+        public R? TryWriteAll<R>(IOptimisticCriticalSection[] resources, int timeoutMilliseconds, out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R> function)
+        {
+            var collection = new CriticalCollection[resources.Length];
+
+            if (_criticalSection.TryAcquire(LockIntention.Exclusive))
+            {
+                try
+                {
+                    for (int i = 0; i < collection.Length; i++)
+                    {
+                        collection[i] = new(resources[i]);
+                        collection[i].IsLockHeld = collection[i].Resource.TryAcquire(LockIntention.Exclusive, timeoutMilliseconds);
+
+                        if (collection[i].IsLockHeld == false)
+                        {
+                            //We didnt get one of the locks, free the ones we did get and bailout.
+                            foreach (var lockObject in collection.Where(o => o.IsLockHeld))
+                            {
+                                lockObject.Resource.Release(LockIntention.Exclusive);
+                            }
+
+                            wasLockObtained = false;
+                            return default;
+                        }
+                    }
+
+                    var result = function(_value);
+
+                    foreach (var lockObject in collection.Where(o => o.IsLockHeld))
+                    {
+                        lockObject.Resource.Release(LockIntention.Exclusive);
+                    }
+                    wasLockObtained = true;
+
+                    return result;
+                }
+                finally
+                {
+                    _criticalSection.Release(LockIntention.Exclusive);
+                }
+            }
+
+            wasLockObtained = false;
+            return default;
+        }
+
+        /// <summary>
+        /// Attmepts to acquire the lock base lock as well as all supplied locks. If successful, executes the delegate function and
+        /// returns the nullable value from the delegate function. Otherwise returns null.
+        /// </summary>
+        /// <typeparam name="R"></typeparam>
+        /// <param name="resources"></param>
+        /// <param name="function"></param>
+        /// <returns></returns>
+        public R? WriteAll<R>(IOptimisticCriticalSection[] resources, CriticalResourceDelegateWithNullableResultT<R> function)
+        {
+            _criticalSection.Acquire(LockIntention.Exclusive);
+
+            try
+            {
+                foreach (var res in resources)
+                {
+                    res.Acquire(LockIntention.Exclusive);
+                }
+
+                var result = function(_value);
+
+                foreach (var res in resources)
+                {
+                    res.Release(LockIntention.Exclusive);
+                }
+
+                return result;
+            }
+            finally
+            {
+                _criticalSection.Release(LockIntention.Exclusive);
+            }
+        }
+
+        /// <summary>
+        /// Blocks until the base lock as well as all supplied locks are acquired then executes the delegate function and
+        /// returns the non-nullable value from the delegate function.
+        /// </summary>
+        /// <typeparam name="R"></typeparam>
+        /// <param name="resources"></param>
+        /// <param name="function"></param>
+        /// <returns></returns>
+        public R WriteAll<R>(IOptimisticCriticalSection[] resources, CriticalResourceDelegateWithNotNullableResultT<R> function)
+        {
+            _criticalSection.Acquire(LockIntention.Exclusive);
+
+            try
+            {
+                foreach (var res in resources)
+                {
+                    res.Acquire(LockIntention.Exclusive);
+                }
+
+                var result = function(_value);
+
+                foreach (var res in resources)
+                {
+                    res.Release(LockIntention.Exclusive);
+                }
+
+                return result;
+            }
+            finally
+            {
+                _criticalSection.Release(LockIntention.Exclusive);
+            }
+        }
+
+        /// <summary>
+        /// Blocks until the base lock as well as all supplied locks are acquired then executes the delegate function.
+        /// </summary>
+        /// <param name="resources"></param>
+        /// <param name="function"></param>
+        public void WriteAll(IOptimisticCriticalSection[] resources, CriticalResourceDelegateWithVoidResult function)
+        {
+            _criticalSection.Acquire(LockIntention.Exclusive);
+
+            try
+            {
+                foreach (var res in resources)
+                {
+                    res.Acquire(LockIntention.Exclusive);
+                }
+
+                function(_value);
+
+                foreach (var res in resources)
+                {
+                    res.Release(LockIntention.Exclusive);
+                }
+            }
+            finally
+            {
+                _criticalSection.Release(LockIntention.Exclusive);
+            }
+        }
+
+
+        #endregion
+
+        #region Use All (Read)
+
+        /// <summary>
+        /// Attmepts to acquire the lock. If successful, executes the delegate function.
+        /// </summary>
+        /// <param name="resources"></param>
+        /// <param name="wasLockObtained"></param>
+        /// <param name="function"></param>
+        public void TryReadAll(IOptimisticCriticalSection[] resources, out bool wasLockObtained, CriticalResourceDelegateWithVoidResult function)
+        {
+            var collection = new CriticalCollection[resources.Length];
+
+            if (_criticalSection.TryAcquire(LockIntention.Readonly))
+            {
+                try
+                {
+                    for (int i = 0; i < collection.Length; i++)
+                    {
+                        collection[i] = new(resources[i]);
+                        collection[i].IsLockHeld = collection[i].Resource.TryAcquire(LockIntention.Readonly);
+
+                        if (collection[i].IsLockHeld == false)
+                        {
+                            //We didnt get one of the locks, free the ones we did get and bailout.
+                            foreach (var lockObject in collection.Where(o => o.IsLockHeld))
+                            {
+                                lockObject.Resource.Release(LockIntention.Readonly);
+                            }
+
+                            wasLockObtained = false;
+                            return;
+                        }
+                    }
+
+                    function(_value);
+
+                    foreach (var lockObject in collection.Where(o => o.IsLockHeld))
+                    {
+                        lockObject.Resource.Release(LockIntention.Readonly);
+                    }
+                    wasLockObtained = true;
+
+                    return;
+                }
+                finally
+                {
+                    _criticalSection.Release(LockIntention.Readonly);
+                }
+            }
+
+            wasLockObtained = false;
+        }
+
+        /// <summary>
+        /// Attmepts to acquire the lock for the specified number of milliseconds. If successful, executes the delegate function.
+        /// </summary>
+        /// <param name="resources"></param>
+        /// <param name="timeoutMilliseconds"></param>
+        /// <param name="wasLockObtained"></param>
+        /// <param name="function"></param>
+        public void TryReadAll(IOptimisticCriticalSection[] resources, int timeoutMilliseconds, out bool wasLockObtained, CriticalResourceDelegateWithVoidResult function)
+        {
+            var collection = new CriticalCollection[resources.Length];
+
+            if (_criticalSection.TryAcquire(LockIntention.Readonly))
+            {
+                try
+                {
+                    for (int i = 0; i < collection.Length; i++)
+                    {
+                        collection[i] = new(resources[i]);
+                        collection[i].IsLockHeld = collection[i].Resource.TryAcquire(LockIntention.Readonly, timeoutMilliseconds);
+
+                        if (collection[i].IsLockHeld == false)
+                        {
+                            //We didnt get one of the locks, free the ones we did get and bailout.
+                            foreach (var lockObject in collection.Where(o => o.IsLockHeld))
+                            {
+                                lockObject.Resource.Release(LockIntention.Readonly);
+                            }
+
+                            wasLockObtained = false;
+                            return;
+                        }
+                    }
+
+                    function(_value);
+
+                    foreach (var lockObject in collection.Where(o => o.IsLockHeld))
+                    {
+                        lockObject.Resource.Release(LockIntention.Readonly);
+                    }
+                    wasLockObtained = true;
+
+                    return;
+                }
+                finally
+                {
+                    _criticalSection.Release(LockIntention.Readonly);
+                }
+            }
+
+            wasLockObtained = false;
+        }
+
+        /// <summary>
+        /// Attmepts to acquire the lock. If successful, executes the delegate function and returns the nullable value from the delegate function.
+        /// </summary>
+        /// <typeparam name="R"></typeparam>
+        /// <param name="resources"></param>
+        /// <param name="wasLockObtained"></param>
+        /// <param name="function"></param>
+        /// <returns></returns>
+        public R? TryReadAll<R>(IOptimisticCriticalSection[] resources, out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R> function)
+        {
+            var collection = new CriticalCollection[resources.Length];
+
+            if (_criticalSection.TryAcquire(LockIntention.Readonly))
+            {
+                try
+                {
+                    for (int i = 0; i < collection.Length; i++)
+                    {
+                        collection[i] = new(resources[i]);
+                        collection[i].IsLockHeld = collection[i].Resource.TryAcquire(LockIntention.Readonly);
+
+                        if (collection[i].IsLockHeld == false)
+                        {
+                            //We didnt get one of the locks, free the ones we did get and bailout.
+                            foreach (var lockObject in collection.Where(o => o.IsLockHeld))
+                            {
+                                lockObject.Resource.Release(LockIntention.Readonly);
+                            }
+
+                            wasLockObtained = false;
+                            return default;
+                        }
+                    }
+
+                    var result = function(_value);
+
+                    foreach (var lockObject in collection.Where(o => o.IsLockHeld))
+                    {
+                        lockObject.Resource.Release(LockIntention.Readonly);
+                    }
+                    wasLockObtained = true;
+
+                    return result;
+                }
+                finally
+                {
+                    _criticalSection.Release(LockIntention.Readonly);
+                }
+            }
+
+            wasLockObtained = false;
+            return default;
+        }
+
+        /// <summary>
+        /// Attmepts to acquire the lock. If successful, executes the delegate function and returns the non-nullable value from the delegate function.
+        /// Otherwise returns the given default value.
+        /// </summary>
+        /// <typeparam name="R"></typeparam>
+        /// <param name="resources"></param>
+        /// <param name="wasLockObtained"></param>
+        /// <param name="defaultValue"></param>
+        /// <param name="function"></param>
+        /// <returns></returns>
+        public R TryReadAll<R>(IOptimisticCriticalSection[] resources, out bool wasLockObtained, R defaultValue, CriticalResourceDelegateWithNotNullableResultT<R> function)
+        {
+            var collection = new CriticalCollection[resources.Length];
+
+            if (_criticalSection.TryAcquire(LockIntention.Readonly))
+            {
+                try
+                {
+                    for (int i = 0; i < collection.Length; i++)
+                    {
+                        collection[i] = new(resources[i]);
+                        collection[i].IsLockHeld = collection[i].Resource.TryAcquire(LockIntention.Readonly);
+
+                        if (collection[i].IsLockHeld == false)
+                        {
+                            //We didnt get one of the locks, free the ones we did get and bailout.
+                            foreach (var lockObject in collection.Where(o => o.IsLockHeld))
+                            {
+                                lockObject.Resource.Release(LockIntention.Readonly);
+                            }
+
+                            wasLockObtained = false;
+                            return defaultValue;
+                        }
+                    }
+
+                    var result = function(_value);
+
+                    foreach (var lockObject in collection.Where(o => o.IsLockHeld))
+                    {
+                        lockObject.Resource.Release(LockIntention.Readonly);
+                    }
+                    wasLockObtained = true;
+
+                    return result;
+                }
+                finally
+                {
+                    _criticalSection.Release(LockIntention.Readonly);
+                }
+            }
+
+            wasLockObtained = false;
+            return defaultValue;
+        }
+
+        /// <summary>
+        /// Attmepts to acquire the lock for the given number of milliseconds. If successful, executes the delegate function and
+        /// returns the non-nullable value from the delegate function. Otherwise returns the given default value.
+        /// </summary>
+        /// <typeparam name="R"></typeparam>
+        /// <param name="resources"></param>
+        /// <param name="timeoutMilliseconds"></param>
+        /// <param name="wasLockObtained"></param>
+        /// <param name="defaultValue"></param>
+        /// <param name="function"></param>
+        /// <returns></returns>
+        public R? TryReadAll<R>(IOptimisticCriticalSection[] resources, int timeoutMilliseconds, out bool wasLockObtained, R defaultValue, CriticalResourceDelegateWithNullableResultT<R> function)
+        {
+            var collection = new CriticalCollection[resources.Length];
+
+            if (_criticalSection.TryAcquire(LockIntention.Readonly))
+            {
+                try
+                {
+                    for (int i = 0; i < collection.Length; i++)
+                    {
+                        collection[i] = new(resources[i]);
+                        collection[i].IsLockHeld = collection[i].Resource.TryAcquire(LockIntention.Readonly, timeoutMilliseconds);
+
+                        if (collection[i].IsLockHeld == false)
+                        {
+                            //We didnt get one of the locks, free the ones we did get and bailout.
+                            foreach (var lockObject in collection.Where(o => o.IsLockHeld))
+                            {
+                                lockObject.Resource.Release(LockIntention.Readonly);
+                            }
+
+                            wasLockObtained = false;
+                            return defaultValue;
+                        }
+                    }
+
+                    var result = function(_value);
+
+                    foreach (var lockObject in collection.Where(o => o.IsLockHeld))
+                    {
+                        lockObject.Resource.Release(LockIntention.Readonly);
+                    }
+                    wasLockObtained = true;
+
+                    return result;
+                }
+                finally
+                {
+                    _criticalSection.Release(LockIntention.Readonly);
+                }
+            }
+
+            wasLockObtained = false;
+            return defaultValue;
+        }
+
+        /// <summary>
+        /// Attmepts to acquire the lock for the given number of milliseconds. If successful, executes the delegate function and
+        /// returns the nullable value from the delegate function. Otherwise returns null.
+        /// </summary>
+        /// <typeparam name="R"></typeparam>
+        /// <param name="resources"></param>
+        /// <param name="timeoutMilliseconds"></param>
+        /// <param name="wasLockObtained"></param>
+        /// <param name="function"></param>
+        /// <returns></returns>
+        public R? TryReadAll<R>(IOptimisticCriticalSection[] resources, int timeoutMilliseconds, out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R> function)
+        {
+            var collection = new CriticalCollection[resources.Length];
+
+            if (_criticalSection.TryAcquire(LockIntention.Readonly))
+            {
+                try
+                {
+                    for (int i = 0; i < collection.Length; i++)
+                    {
+                        collection[i] = new(resources[i]);
+                        collection[i].IsLockHeld = collection[i].Resource.TryAcquire(LockIntention.Readonly, timeoutMilliseconds);
+
+                        if (collection[i].IsLockHeld == false)
+                        {
+                            //We didnt get one of the locks, free the ones we did get and bailout.
+                            foreach (var lockObject in collection.Where(o => o.IsLockHeld))
+                            {
+                                lockObject.Resource.Release(LockIntention.Readonly);
+                            }
+
+                            wasLockObtained = false;
+                            return default;
+                        }
+                    }
+
+                    var result = function(_value);
+
+                    foreach (var lockObject in collection.Where(o => o.IsLockHeld))
+                    {
+                        lockObject.Resource.Release(LockIntention.Readonly);
+                    }
+                    wasLockObtained = true;
+
+                    return result;
+                }
+                finally
+                {
+                    _criticalSection.Release(LockIntention.Readonly);
+                }
+            }
+
+            wasLockObtained = false;
+            return default;
+        }
+
+        /// <summary>
+        /// Attmepts to acquire the lock base lock as well as all supplied locks. If successful, executes the delegate function and
+        /// returns the nullable value from the delegate function. Otherwise returns null.
+        /// </summary>
+        /// <typeparam name="R"></typeparam>
+        /// <param name="resources"></param>
+        /// <param name="function"></param>
+        /// <returns></returns>
+        public R? ReadAll<R>(IOptimisticCriticalSection[] resources, CriticalResourceDelegateWithNullableResultT<R> function)
+        {
+            _criticalSection.Acquire(LockIntention.Readonly);
+
+            try
+            {
+                foreach (var res in resources)
+                {
+                    res.Acquire(LockIntention.Readonly);
+                }
+
+                var result = function(_value);
+
+                foreach (var res in resources)
+                {
+                    res.Release(LockIntention.Readonly);
+                }
+
+                return result;
+            }
+            finally
+            {
+                _criticalSection.Release(LockIntention.Readonly);
+            }
+        }
+
+        /// <summary>
+        /// Blocks until the base lock as well as all supplied locks are acquired then executes the delegate function and
+        /// returns the non-nullable value from the delegate function.
+        /// </summary>
+        /// <typeparam name="R"></typeparam>
+        /// <param name="resources"></param>
+        /// <param name="function"></param>
+        /// <returns></returns>
+        public R ReadAll<R>(IOptimisticCriticalSection[] resources, CriticalResourceDelegateWithNotNullableResultT<R> function)
+        {
+            _criticalSection.Acquire(LockIntention.Readonly);
+
+            try
+            {
+                foreach (var res in resources)
+                {
+                    res.Acquire(LockIntention.Readonly);
+                }
+
+                var result = function(_value);
+
+                foreach (var res in resources)
+                {
+                    res.Release(LockIntention.Readonly);
+                }
+
+                return result;
+            }
+            finally
+            {
+                _criticalSection.Release(LockIntention.Readonly);
+            }
+        }
+
+        /// <summary>
+        /// Blocks until the base lock as well as all supplied locks are acquired then executes the delegate function.
+        /// </summary>
+        /// <param name="resources"></param>
+        /// <param name="function"></param>
+        public void ReadAll(IOptimisticCriticalSection[] resources, CriticalResourceDelegateWithVoidResult function)
+        {
+            _criticalSection.Acquire(LockIntention.Readonly);
+
+            try
+            {
+                foreach (var res in resources)
+                {
+                    res.Acquire(LockIntention.Readonly);
+                }
+
+                function(_value);
+
+                foreach (var res in resources)
+                {
+                    res.Release(LockIntention.Readonly);
+                }
+            }
+            finally
+            {
+                _criticalSection.Release(LockIntention.Readonly);
+            }
+        }
+
 
         #endregion
     }
