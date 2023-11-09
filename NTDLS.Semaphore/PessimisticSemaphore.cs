@@ -1,19 +1,19 @@
 ﻿namespace NTDLS.Semaphore
 {
     /// <summary>
-    /// Protects a variable from parallel / non-sequential thread access.
+    /// Protects a variable from parallel / non-sequential thread access by always acquiring an exclusive lock on the resource. 
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    public class CriticalResource<T> : ICriticalResource where T : class, new()
+    /// <typeparam name="T">The type of the resource that will be instantiated and protected.</typeparam>
+    public class PessimisticSemaphore<T> : ICriticalSection where T : class, new()
     {
         #region Local Classes.
 
         private class CriticalCollection
         {
-            public ICriticalResource Resource { get; set; }
+            public ICriticalSection Resource { get; set; }
             public bool IsLockHeld { get; set; } = false;
 
-            public CriticalCollection(ICriticalResource resource)
+            public CriticalCollection(ICriticalSection resource)
             {
                 Resource = resource;
             }
@@ -21,8 +21,10 @@
 
         #endregion
 
-        private readonly ICriticalResource _criticalSection;
+        private readonly ICriticalSection _criticalSection;
         private readonly T _value;
+
+        #region Delegates.
 
         /// <summary>
         /// Delegate for executions that do not require a return value.
@@ -46,25 +48,27 @@
         /// <returns></returns>
         public delegate R CriticalResourceDelegateWithNotNullableResultT<R>(T obj);
 
+        #endregion
+
         /// <summary>
         /// Identifies the current thread that owns the lock.
         /// </summary>
         public Thread? OwnerThread { get; private set; }
 
         /// <summary>
-        /// Initializes a new critical section that envelopes a variable.
+        /// Initializes a new pessimistic semaphore that envelopes a variable.
         /// </summary>
-        public CriticalResource()
+        public PessimisticSemaphore()
         {
             _value = new T();
             _criticalSection = new CriticalSection();
         }
 
         /// <summary>
-        /// Initializes a new critical section that envelopes a variable with a set value. This allows you to protect a variable that has a non-empty constructor.
+        /// Initializes a new pessimistic semaphore that envelopes a variable with a set value. This allows you to protect a variable that has a non-empty constructor.
         /// </summary>
         /// <param name="value"></param>
-        public CriticalResource(T value)
+        public PessimisticSemaphore(T value)
         {
             _value = value;
             _criticalSection = new CriticalSection();
@@ -72,10 +76,10 @@
 
         /// <summary>
         /// Envelopes a variable with a set value, using a predefined critical section.
-        /// If other CriticalResources use the same criticalSection, they will require the exclusive lock of the shared criticalSection.
+        /// If other pessimistic semaphores use the same critical section, they will require the exclusive lock of the shared critical section.
         /// </summary>
         /// <param name="criticalSection"></param>
-        public CriticalResource(ICriticalResource criticalSection)
+        public PessimisticSemaphore(ICriticalSection criticalSection)
         {
             _value = new T();
             _criticalSection = criticalSection;
@@ -83,11 +87,11 @@
 
         /// <summary>
         /// Envelopes a variable with a set value, using a predefined critical section. This allows you to protect a variable that has a non-empty constructor.
-        /// If other CriticalResources use the same criticalSection, they will require the exclusive lock of the shared criticalSection.
+        /// If other pessimistic semaphores use the same critical section, they will require the exclusive lock of the shared critical section.
         /// </summary>
         /// <param name="value"></param>
         /// <param name="criticalSection"></param>
-        public CriticalResource(T value, ICriticalResource criticalSection)
+        public PessimisticSemaphore(T value, ICriticalSection criticalSection)
         {
             _value = value;
             _criticalSection = criticalSection;
@@ -137,7 +141,7 @@
         /// <param name="resources"></param>
         /// <param name="wasLockObtained"></param>
         /// <param name="function"></param>
-        public void TryUseAll(ICriticalResource[] resources, out bool wasLockObtained, CriticalResourceDelegateWithVoidResult function)
+        public void TryUseAll(ICriticalSection[] resources, out bool wasLockObtained, CriticalResourceDelegateWithVoidResult function)
         {
             var collection = new CriticalCollection[resources.Length];
 
@@ -189,7 +193,7 @@
         /// <param name="timeoutMilliseconds"></param>
         /// <param name="wasLockObtained"></param>
         /// <param name="function"></param>
-        public void TryUseAll(ICriticalResource[] resources, int timeoutMilliseconds, out bool wasLockObtained, CriticalResourceDelegateWithVoidResult function)
+        public void TryUseAll(ICriticalSection[] resources, int timeoutMilliseconds, out bool wasLockObtained, CriticalResourceDelegateWithVoidResult function)
         {
             var collection = new CriticalCollection[resources.Length];
 
@@ -242,7 +246,7 @@
         /// <param name="wasLockObtained"></param>
         /// <param name="function"></param>
         /// <returns></returns>
-        public R? TryUseAll<R>(ICriticalResource[] resources, out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R> function)
+        public R? TryUseAll<R>(ICriticalSection[] resources, out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R> function)
         {
             var collection = new CriticalCollection[resources.Length];
 
@@ -298,7 +302,7 @@
         /// <param name="defaultValue"></param>
         /// <param name="function"></param>
         /// <returns></returns>
-        public R TryUseAll<R>(ICriticalResource[] resources, out bool wasLockObtained, R defaultValue, CriticalResourceDelegateWithNotNullableResultT<R> function)
+        public R TryUseAll<R>(ICriticalSection[] resources, out bool wasLockObtained, R defaultValue, CriticalResourceDelegateWithNotNullableResultT<R> function)
         {
             var collection = new CriticalCollection[resources.Length];
 
@@ -355,7 +359,7 @@
         /// <param name="defaultValue"></param>
         /// <param name="function"></param>
         /// <returns></returns>
-        public R? TryUseAll<R>(ICriticalResource[] resources, int timeoutMilliseconds, out bool wasLockObtained, R defaultValue, CriticalResourceDelegateWithNullableResultT<R> function)
+        public R? TryUseAll<R>(ICriticalSection[] resources, int timeoutMilliseconds, out bool wasLockObtained, R defaultValue, CriticalResourceDelegateWithNullableResultT<R> function)
         {
             var collection = new CriticalCollection[resources.Length];
 
@@ -411,7 +415,7 @@
         /// <param name="wasLockObtained"></param>
         /// <param name="function"></param>
         /// <returns></returns>
-        public R? TryUseAll<R>(ICriticalResource[] resources, int timeoutMilliseconds, out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R> function)
+        public R? TryUseAll<R>(ICriticalSection[] resources, int timeoutMilliseconds, out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R> function)
         {
             var collection = new CriticalCollection[resources.Length];
 
@@ -465,7 +469,7 @@
         /// <param name="resources"></param>
         /// <param name="function"></param>
         /// <returns></returns>
-        public R? UseAll<R>(ICriticalResource[] resources, CriticalResourceDelegateWithNullableResultT<R> function)
+        public R? UseAll<R>(ICriticalSection[] resources, CriticalResourceDelegateWithNullableResultT<R> function)
         {
             Acquire();
 
@@ -499,7 +503,7 @@
         /// <param name="resources"></param>
         /// <param name="function"></param>
         /// <returns></returns>
-        public R UseAll<R>(ICriticalResource[] resources, CriticalResourceDelegateWithNotNullableResultT<R> function)
+        public R UseAll<R>(ICriticalSection[] resources, CriticalResourceDelegateWithNotNullableResultT<R> function)
         {
             Acquire();
 
@@ -530,7 +534,7 @@
         /// </summary>
         /// <param name="resources"></param>
         /// <param name="function"></param>
-        public void UseAll(ICriticalResource[] resources, CriticalResourceDelegateWithVoidResult function)
+        public void UseAll(ICriticalSection[] resources, CriticalResourceDelegateWithVoidResult function)
         {
             Acquire();
 
@@ -865,23 +869,46 @@
         /// </summary>
         /// <param name="timeoutMilliseconds"></param>
         /// <returns></returns>
-        public bool TryAcquire(int timeoutMilliseconds) => _criticalSection.TryAcquire(timeoutMilliseconds);
+        bool ICriticalSection.TryAcquire(int timeoutMilliseconds) => TryAcquire(timeoutMilliseconds);
 
         /// <summary>
         /// Internal use only. Attempts to acquire the lock.
         /// </summary>
         /// <returns></returns>
-        public bool TryAcquire() => _criticalSection.TryAcquire();
+        bool ICriticalSection.TryAcquire() => TryAcquire();
 
         /// <summary>
         /// Internal use only. Blocks until the lock is acquired.
         /// </summary>
-        public void Acquire() => _criticalSection.Acquire();
+        void ICriticalSection.Acquire() => Acquire();
 
         /// <summary>
         /// Internal use only. Releases the previously acquired lock.
         /// </summary>
-        public void Release() => _criticalSection.Release();
+        void ICriticalSection.Release() => Release();
+
+        /// <summary>
+        /// Internal use only. Attempts to acquire the lock for a given number of milliseconds.
+        /// </summary>
+        /// <param name="timeoutMilliseconds"></param>
+        /// <returns></returns>
+        private bool TryAcquire(int timeoutMilliseconds) => _criticalSection.TryAcquire(timeoutMilliseconds);
+
+        /// <summary>
+        /// Internal use only. Attempts to acquire the lock.
+        /// </summary>
+        /// <returns></returns>
+        private bool TryAcquire() => _criticalSection.TryAcquire();
+
+        /// <summary>
+        /// Internal use only. Blocks until the lock is acquired.
+        /// </summary>
+        private void Acquire() => _criticalSection.Acquire();
+
+        /// <summary>
+        /// Internal use only. Releases the previously acquired lock.
+        /// </summary>
+        private void Release() => _criticalSection.Release();
 
         #endregion
     }
