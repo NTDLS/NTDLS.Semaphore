@@ -11,21 +11,21 @@
     <Title>NTDLS.Semaphore</Title>
     <Copyright>Copyright © 2023 NetworkDLS</Copyright>
     <Description>
-      Provides various classes for to ensure sequential mult-threaded access to variables or sections of code.
+      Provides various classes to ensure sequential access to variables or sections of code in mult-threaded code.
     </Description>
     <PackageProjectUrl>https://github.com/NTDLS/NTDLS.Semaphore</PackageProjectUrl>
     <RepositoryUrl>https://github.com/NTDLS/NTDLS.Semaphore</RepositoryUrl>
     <PackageTags>threading;critical-section;semaphore;parallel-execution;sequential-execution</PackageTags>
     <PackageReleaseNotes>
-      Author revision.
+      Typo that I could not stand.
     </PackageReleaseNotes>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <Authors>NetworkDLS</Authors>
     <Company>NetworkDLS</Company>
-    <AssemblyVersion>1.5.1</AssemblyVersion>
-    <FileVersion>1.5.1</FileVersion>
-    <VersionPrefix>1.5.1</VersionPrefix>
+    <AssemblyVersion>1.5.2</AssemblyVersion>
+    <FileVersion>1.5.2</FileVersion>
+    <VersionPrefix>1.5.2</VersionPrefix>
     <version></version>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>Logo.png</PackageIcon>
