@@ -8,9 +8,9 @@ namespace TestHarness
         private readonly List<Thread> _threads = new();
 
         const int _threadsToCreate = 10;
-        const int _objectsPerIteration = 1000;
+        const int _objectsPerIteration = 10000;
 
-        public void Execute()
+        public double Execute()
         {
             Console.WriteLine("[PessimisticSemaphore] {");
             DateTime startTime = DateTime.UtcNow;
@@ -23,8 +23,11 @@ namespace TestHarness
             _threads.ForEach((t) => t.Join()); //Wait on all threads to exit.
 
             Console.WriteLine($"\tObjects: {_listOfObjects.Use(o => o.Count):n0}");
-            Console.WriteLine($"\tDuration: {(DateTime.UtcNow - startTime).TotalMilliseconds:n0}");
+            double duration = (DateTime.UtcNow - startTime).TotalMilliseconds;
+            Console.WriteLine($"\tDuration: {duration:n0}");
             Console.WriteLine("}");
+
+            return duration;
         }
 
         private void ThreadProc()

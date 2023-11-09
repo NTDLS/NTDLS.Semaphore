@@ -9,11 +9,11 @@ namespace TestHarness
         private readonly List<string> _listOfObjects = new();
 
         const int _threadsToCreate = 10;
-        const int _objectsPerIteration = 1000;
+        const int _objectsPerIteration = 10000;
 
-        public void Execute()
+        public double Execute()
         {
-            Console.WriteLine("[TestCriticalSection] {");
+            Console.WriteLine("[CriticalSection] {");
             DateTime startTime = DateTime.UtcNow;
 
             //Create test threads:
@@ -24,8 +24,11 @@ namespace TestHarness
             _threads.ForEach((t) => t.Join()); //Wait on all threads to exit.
 
             Console.WriteLine($"\tObjects: {_listOfObjects.Count:n0}");
-            Console.WriteLine($"\tDuration: {(DateTime.UtcNow - startTime).TotalMilliseconds:n0}");
+            double duration = (DateTime.UtcNow - startTime).TotalMilliseconds;
+            Console.WriteLine($"\tDuration: {duration:n0}");
             Console.WriteLine("}");
+
+            return duration;
         }
 
         private void ThreadProc()

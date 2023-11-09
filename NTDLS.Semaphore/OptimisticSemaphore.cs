@@ -184,7 +184,6 @@
             }
         }
 
-
         /// <summary>
         /// Blocks until the lock is acquired then executes the delegate function.
         /// </summary>
@@ -852,9 +851,9 @@
                     //This thread needs to acquire a new exclusive lock.
                     if (intention == LockIntention.Exclusive)
                     {
-                        //Check to see if there are any existig read locks (other than the ones held by the current thread).
+                        //Check to see if there are any existig locks (other than the ones held by the current thread).
                         //Read locks held by this thread DO NOT block new exclusive locks by the same thread.
-                        if (o.Where(l => l.LockType == LockIntention.Readonly && l.ThreadId != threadId).Any() == false)
+                        if (o.Where(l => l.ThreadId != threadId).Any() == false)
                         {
                             //This thread is seeking a exclusive lock and there are no incompativle read-only locks. Grant the exclusive-lock.
                             o.Add(new HeldLock(threadId, intention));
@@ -874,7 +873,7 @@
 
                 _locksModifiedEvent.WaitOne(1);
             }
-            while (beginAttemptTime != null && (DateTime.UtcNow - (DateTime)beginAttemptTime).TotalMilliseconds < timeoutMilliseconds);
+            while (beginAttemptTime == null || (DateTime.UtcNow - (DateTime)beginAttemptTime).TotalMilliseconds < timeoutMilliseconds);
 
             //Return false because we timed out while attempting to acquire the lock.
             return false;
