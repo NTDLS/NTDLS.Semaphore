@@ -96,7 +96,7 @@ public Car? TryGet(string name, int timeout)
 ## Optimistic Semaphore
 Protects a variable from parallel / non-sequential thread access but controls read-only and exclusive
 access separately to prevent read operations from blocking other read operations.it is up to the developer
-to determine when each lock type is appropriate.Note: read-only locks only indicate intention, the resource
+to determine when each lock type is appropriate. Note: read-only locks only indicate intention, the resource
 will not disallow modification of the resource, but this will lead to race conditions.
 
 **OptimisticSemaphore using inline execution example:**
