@@ -9,6 +9,15 @@
         private readonly PessimisticSemaphore<List<HeldLock>> _locks = new();
         private readonly AutoResetEvent _locksModifiedEvent = new(false);
 
+        #region Delegates.
+
+        /// <summary>
+        /// Delegate for executions that do not require a return value.
+        /// </summary>
+        public delegate void CriticalResourceDelegateWithVoidResult();
+
+        #endregion
+
         #region Local types.
 
         /// <summary>
@@ -206,5 +215,243 @@
 
         #endregion
 
+        #region Read/Write/TryRead/TryWrite overloads.
+
+        /// <summary>
+        /// Blocks until the lock is acquired then executes the delegate function.
+        /// </summary>
+        /// <param name="function"></param>
+        public void Read(CriticalResourceDelegateWithVoidResult function)
+        {
+            try
+            {
+                Acquire(LockIntention.Readonly);
+                function();
+            }
+            finally
+            {
+                Release(LockIntention.Readonly);
+            }
+        }
+
+        /// <summary>
+        /// Blocks until the lock is acquired then executes the delegate function.
+        /// </summary>
+        /// <param name="function"></param>
+        public void Write(CriticalResourceDelegateWithVoidResult function)
+        {
+            try
+            {
+                Acquire(LockIntention.Exclusive);
+                function();
+            }
+            finally
+            {
+                Release(LockIntention.Exclusive);
+            }
+        }
+
+        /// <summary>
+        /// Attempts to acquire the lock, if successful then executes the delegate function.
+        /// </summary>
+        /// <param name="wasLockObtained"></param>
+        /// <param name="function"></param>
+        public void TryRead(out bool wasLockObtained, CriticalResourceDelegateWithVoidResult function)
+        {
+            wasLockObtained = false;
+            try
+            {
+                wasLockObtained = TryAcquire(LockIntention.Readonly);
+                if (wasLockObtained)
+                {
+                    function();
+                }
+            }
+            finally
+            {
+                if (wasLockObtained)
+                {
+                    Release(LockIntention.Readonly);
+                }
+            }
+        }
+
+
+        /// <summary>
+        /// Attempts to acquire the lock, if successful then executes the delegate function.
+        /// </summary>
+        /// <param name="wasLockObtained"></param>
+        /// <param name="function"></param>
+        public void TryWrite(out bool wasLockObtained, CriticalResourceDelegateWithVoidResult function)
+        {
+            wasLockObtained = false;
+            try
+            {
+                wasLockObtained = TryAcquire(LockIntention.Exclusive);
+                if (wasLockObtained)
+                {
+                    function();
+                }
+            }
+            finally
+            {
+                if (wasLockObtained)
+                {
+                    Release(LockIntention.Exclusive);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Attempts to acquire the lock, if successful then executes the delegate function.
+        /// </summary>
+        /// <param name="function"></param>
+        public void TryRead(CriticalResourceDelegateWithVoidResult function)
+        {
+            bool wasLockObtained = false;
+            try
+            {
+                wasLockObtained = TryAcquire(LockIntention.Readonly);
+                if (wasLockObtained)
+                {
+                    function();
+                }
+            }
+            finally
+            {
+                if (wasLockObtained)
+                {
+                    Release(LockIntention.Readonly);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Attempts to acquire the lock, if successful then executes the delegate function.
+        /// </summary>
+        /// <param name="function"></param>
+        public void TryWrite(CriticalResourceDelegateWithVoidResult function)
+        {
+            bool wasLockObtained = false;
+            try
+            {
+                wasLockObtained = TryAcquire(LockIntention.Exclusive);
+                if (wasLockObtained)
+                {
+                    function();
+                }
+            }
+            finally
+            {
+                if (wasLockObtained)
+                {
+                    Release(LockIntention.Exclusive);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Attempts to acquire the lock for the given number of milliseconds, if successful then executes the delegate function.
+        /// </summary>
+        /// <param name="wasLockObtained"></param>
+        /// <param name="timeoutMilliseconds"></param>
+        /// <param name="function"></param>
+        public void TryRead(out bool wasLockObtained, int timeoutMilliseconds, CriticalResourceDelegateWithVoidResult function)
+        {
+            wasLockObtained = false;
+            try
+            {
+                wasLockObtained = TryAcquire(LockIntention.Readonly, timeoutMilliseconds);
+                if (wasLockObtained)
+                {
+                    function();
+                }
+            }
+            finally
+            {
+                if (wasLockObtained)
+                {
+                    Release(LockIntention.Readonly);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Attempts to acquire the lock for the given number of milliseconds, if successful then executes the delegate function.
+        /// </summary>
+        /// <param name="wasLockObtained"></param>
+        /// <param name="timeoutMilliseconds"></param>
+        /// <param name="function"></param>
+        public void TryWrite(out bool wasLockObtained, int timeoutMilliseconds, CriticalResourceDelegateWithVoidResult function)
+        {
+            wasLockObtained = false;
+            try
+            {
+                wasLockObtained = TryAcquire(LockIntention.Exclusive, timeoutMilliseconds);
+                if (wasLockObtained)
+                {
+                    function();
+                }
+            }
+            finally
+            {
+                if (wasLockObtained)
+                {
+                    Release(LockIntention.Exclusive);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Attempts to acquire the lock for the given number of milliseconds, if successful then executes the delegate function.
+        /// </summary>
+        /// <param name="timeoutMilliseconds"></param>
+        /// <param name="function"></param>
+        public void TryRead(int timeoutMilliseconds, CriticalResourceDelegateWithVoidResult function)
+        {
+            bool wasLockObtained = false;
+            try
+            {
+                wasLockObtained = TryAcquire(LockIntention.Readonly, timeoutMilliseconds);
+                if (wasLockObtained)
+                {
+                    function();
+                }
+            }
+            finally
+            {
+                if (wasLockObtained)
+                {
+                    Release(LockIntention.Readonly);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Attempts to acquire the lock for the given number of milliseconds, if successful then executes the delegate function.
+        /// </summary>
+        /// <param name="timeoutMilliseconds"></param>
+        /// <param name="function"></param>
+        public void TryWrite(int timeoutMilliseconds, CriticalResourceDelegateWithVoidResult function)
+        {
+            bool wasLockObtained = false;
+            try
+            {
+                wasLockObtained = TryAcquire(LockIntention.Exclusive, timeoutMilliseconds);
+                if (wasLockObtained)
+                {
+                    function();
+                }
+            }
+            finally
+            {
+                if (wasLockObtained)
+                {
+                    Release(LockIntention.Exclusive);
+                }
+            }
+        }
+
+        #endregion
     }
 }

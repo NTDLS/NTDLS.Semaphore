@@ -14,6 +14,7 @@
     <RepositoryUrl>https://github.com/NTDLS/NTDLS.Semaphore</RepositoryUrl>
     <PackageTags>threading;critical-section;semaphore;parallel-execution;sequential-execution</PackageTags>
     <PackageReleaseNotes>
+      Added OptimisticCriticalSection public functions.
       Added OptimisticSemaphore to allow for concurrent reads.
       Added OptimisticSemaphore Read/Write all support.
       Added shared critical section support for optimistic semaphores.
@@ -24,9 +25,9 @@
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <Authors>NetworkDLS</Authors>
     <Company>NetworkDLS</Company>
-    <AssemblyVersion>2.2.0</AssemblyVersion>
-    <FileVersion>2.2.0</FileVersion>
-    <VersionPrefix>2.2.0</VersionPrefix>
+    <AssemblyVersion>2.2.1</AssemblyVersion>
+    <FileVersion>2.2.1</FileVersion>
+    <VersionPrefix>2.2.1</VersionPrefix>
     <version></version>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>Logo.png</PackageIcon>

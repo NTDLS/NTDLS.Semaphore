@@ -3,7 +3,7 @@
     /// <summary>
     /// Protects an area of code from parallel / non-sequential thread access.
     /// </summary>
-    public class CriticalSection : ICriticalSection
+    public class PessimisticCriticalSection : IPessimisticCriticalSection
     {
         /// <summary>
         /// Identifies the current thread that owns the lock. This is only tracked if enabled by a call
@@ -58,7 +58,7 @@
         /// This is only tracked if enabled by a call to EnableGlobalLockRegistration().
         /// Once enabled, the tracking is attributed to all critical sections for the life of the applicaiton.
         /// </summary>
-        public readonly static Dictionary<string, ICriticalSection> GlobalLocks = new();
+        public readonly static Dictionary<string, IPessimisticCriticalSection> GlobalLocks = new();
 
         #endregion
 
@@ -404,23 +404,23 @@
         /// </summary>
         /// <param name="timeoutMilliseconds"></param>
         /// <returns></returns>
-        bool ICriticalSection.TryAcquire(int timeoutMilliseconds) => TryAcquire(timeoutMilliseconds);
+        bool IPessimisticCriticalSection.TryAcquire(int timeoutMilliseconds) => TryAcquire(timeoutMilliseconds);
 
         /// <summary>
         /// Internal use only. Attempts to acquire the lock.
         /// </summary>
         /// <returns></returns>
-        bool ICriticalSection.TryAcquire() => TryAcquire();
+        bool IPessimisticCriticalSection.TryAcquire() => TryAcquire();
 
         /// <summary>
         /// Internal use only. Blocks until the lock is acquired.
         /// </summary>
-        void ICriticalSection.Acquire() => Acquire();
+        void IPessimisticCriticalSection.Acquire() => Acquire();
 
         /// <summary>
         /// Internal use only. Releases the previously acquired lock.
         /// </summary>
-        void ICriticalSection.Release() => Release();
+        void IPessimisticCriticalSection.Release() => Release();
 
         /// <summary>
         /// Internal use only. Attempts to acquire the lock for a given number of milliseconds.
