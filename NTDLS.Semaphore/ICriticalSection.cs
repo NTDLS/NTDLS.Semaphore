@@ -3,7 +3,7 @@
     /// <summary>
     /// Public interface that all lock types must implement.
     /// </summary>
-    public interface ICriticalResource
+    public interface ICriticalSection
     {
         /// <summary>
         /// Internal use only. Attempts to acquire the lock for a given number of milliseconds.

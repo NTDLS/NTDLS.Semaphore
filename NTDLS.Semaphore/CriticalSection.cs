@@ -3,14 +3,25 @@
     /// <summary>
     /// Protects an area of code from parallel / non-sequential thread access.
     /// </summary>
-    public class CriticalSection : ICriticalResource
+    public class CriticalSection : ICriticalSection
     {
+        /// <summary>
+        /// Identifies the current thread that owns the lock. This is only tracked if enabled by a call
+        /// to EnableThreadOwnershipTracking(). Once enabled, the tracking is attributed to all critical
+        /// sections for the life of the applicaiton - so its definitly best only enabled in debugging.
+        /// </summary>
+        public Thread? OwnerThread { get; private set; }
+        private int _reentrantLevel = 0;
+
+        #region Global static configuration.
+
         private static bool _enableGlobalLockRegistration = false;
         private static bool _enableThreadOwnershipTracking = false;
 
         /// <summary>
-        /// Enables a dictonary of all threads that own locks. This can be handy when identifying deadlocks and race conditions.
-        /// Once enabled, the tracking is attributed to all critical sections for the life of the applicaiton.
+        /// Enables a dictonary of all threads that own locks. This can be handy when identifying deadlocks
+        /// and race conditions. Once enabled, the tracking is attributed to all critical sections for the
+        /// life of the applicaiton.  - so its definitly best only enabled in debugging.
         /// </summary>
         public static void EnableGlobalLockRegistration() => _enableGlobalLockRegistration = true;
 
@@ -18,6 +29,10 @@
         /// Enables tracking of the current thread that owns the lock. This is only tracked if enabled by a call to EnableThreadOwnershipTracking().
         /// </summary>
         public static void EnableThreadOwnershipTracking() => _enableThreadOwnershipTracking = true;
+
+        #endregion
+
+        #region Delegates.
 
         /// <summary>
         /// Delegate for executions that do not require a return value.
@@ -43,14 +58,11 @@
         /// This is only tracked if enabled by a call to EnableGlobalLockRegistration().
         /// Once enabled, the tracking is attributed to all critical sections for the life of the applicaiton.
         /// </summary>
-        public readonly static Dictionary<string, ICriticalResource> GlobalLocks = new();
+        public readonly static Dictionary<string, ICriticalSection> GlobalLocks = new();
 
-        /// <summary>
-        /// Identifies the current thread that owns the lock. This is only tracked if enabled by a call to EnableThreadOwnershipTracking().
-        /// Once enabled, the tracking is attributed to all critical sections for the life of the applicaiton.
-        /// </summary>
-        public Thread? OwnerThread { get; private set; }
-        int _reentrantLevel = 0;
+        #endregion
+
+        #region Use/TryUse overloads.
 
         /// <summary>
         /// Attempts to acquire the critical section, if successful executes and returns the given delegate result. Otherwise returns the given default value.
@@ -383,6 +395,8 @@
             }
         }
 
+        #endregion
+
         #region Internal interface functionality.
 
         /// <summary>
@@ -390,7 +404,30 @@
         /// </summary>
         /// <param name="timeoutMilliseconds"></param>
         /// <returns></returns>
-        public bool TryAcquire(int timeoutMilliseconds)
+        bool ICriticalSection.TryAcquire(int timeoutMilliseconds) => TryAcquire(timeoutMilliseconds);
+
+        /// <summary>
+        /// Internal use only. Attempts to acquire the lock.
+        /// </summary>
+        /// <returns></returns>
+        bool ICriticalSection.TryAcquire() => TryAcquire();
+
+        /// <summary>
+        /// Internal use only. Blocks until the lock is acquired.
+        /// </summary>
+        void ICriticalSection.Acquire() => Acquire();
+
+        /// <summary>
+        /// Internal use only. Releases the previously acquired lock.
+        /// </summary>
+        void ICriticalSection.Release() => Release();
+
+        /// <summary>
+        /// Internal use only. Attempts to acquire the lock for a given number of milliseconds.
+        /// </summary>
+        /// <param name="timeoutMilliseconds"></param>
+        /// <returns></returns>
+        private bool TryAcquire(int timeoutMilliseconds)
         {
             if (Monitor.TryEnter(this, timeoutMilliseconds))
             {
@@ -415,11 +452,12 @@
             return false;
         }
 
+
         /// <summary>
         /// Internal use only. Attempts to acquire the lock.
         /// </summary>
         /// <returns></returns>
-        public bool TryAcquire()
+        private bool TryAcquire()
         {
             if (Monitor.TryEnter(this))
             {
@@ -448,7 +486,7 @@
         /// <summary>
         /// Internal use only. Blocks until the lock is acquired.
         /// </summary>
-        public void Acquire()
+        private void Acquire()
         {
             Monitor.Enter(this);
             if (_enableThreadOwnershipTracking)
@@ -472,7 +510,7 @@
         /// <summary>
         /// Internal use only. Releases the previously acquired lock.
         /// </summary>
-        public void Release()
+        private void Release()
         {
             _reentrantLevel--;
 
@@ -503,6 +541,7 @@
 
             Monitor.Exit(this);
         }
+
 
         #endregion
     }

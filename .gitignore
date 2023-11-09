@@ -4,3 +4,7 @@
 NTDLS.Semaphore/bin/
 
 NTDLS.Semaphore/obj/
+
+TestHarness/bin/
+
+TestHarness/obj/
