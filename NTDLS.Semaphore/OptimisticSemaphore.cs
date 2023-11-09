@@ -1,4 +1,6 @@
-﻿namespace NTDLS.Semaphore
+﻿using static NTDLS.Semaphore.OptimisticCriticalSection;
+
+namespace NTDLS.Semaphore
 {
     /// <summary>
     ///Protects a variable from parallel / non-sequential thread access but controls read-only and exclusive
@@ -10,8 +12,8 @@
     public class OptimisticSemaphore<T> where T : class, new()
     {
         private readonly T _value;
-        private readonly PessimisticSemaphore<List<HeldLock>> _locks = new();
-        private readonly AutoResetEvent _locksModifiedEvent = new(false);
+
+        private IOptimisticCriticalSection _criticalSection;
 
         #region Delegates.
 
@@ -39,44 +41,12 @@
 
         #endregion
 
-        #region Local types.
-
-        /// <summary>
-        /// The type of action that the code intends to perform after the lock is obtained.
-        /// </summary>
-        private enum LockIntention
-        {
-            /// <summary>
-            /// The code intends to modify the resource (such as remove an item from a collection).
-            /// </summary>
-            Exclusive,
-            /// <summary>
-            /// The code intends only to read the resource (such as iterate through a a collection).
-            /// </summary>
-            Readonly
-        }
-
-        private class HeldLock
-        {
-            public int ThreadId { get; set; }
-            public int ReferenceCount { get; set; }
-            public LockIntention LockType { get; set; }
-
-            public HeldLock(int threadId, LockIntention lockType)
-            {
-                ThreadId = threadId;
-                LockType = lockType;
-                ReferenceCount++;
-            }
-        }
-
-        #endregion
-
         /// <summary>
         /// Initializes a new optimistic semaphore that envelopes a variable.
         /// </summary>
         public OptimisticSemaphore()
         {
+            _criticalSection = new OptimisticCriticalSection();
             _value = new T();
         }
 
@@ -86,7 +56,32 @@
         /// <param name="value"></param>
         public OptimisticSemaphore(T value)
         {
+            _criticalSection = new OptimisticCriticalSection();
             _value = value;
+        }
+
+        /// <summary>
+        /// Envelopes a variable using a predefined critical section.
+        /// If other optimistic semaphores use the same critical section, they will require the lock of the shared critical section.
+        /// </summary>
+        /// <param name="criticalSection"></param>
+        public OptimisticSemaphore(IOptimisticCriticalSection criticalSection)
+        {
+            _criticalSection = criticalSection;
+            _value = new T();
+            _criticalSection = criticalSection;
+        }
+
+        /// <summary>
+        /// Envelopes a variable with a set value, using a predefined critical section. This allows you to protect a variable that has a non-empty constructor.
+        /// If other optimistic semaphores use the same critical section, they will require the lock of the shared critical section.
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="criticalSection"></param>
+        public OptimisticSemaphore(T value, IOptimisticCriticalSection criticalSection)
+        {
+            _value = value;
+            _criticalSection = criticalSection;
         }
 
         #region Read/Write/TryRead/TryWrite overloads.
@@ -101,12 +96,12 @@
         {
             try
             {
-                Acquire(LockIntention.Readonly);
+                _criticalSection.Acquire(LockIntention.Readonly);
                 return function(_value);
             }
             finally
             {
-                Release(LockIntention.Readonly);
+                _criticalSection.Release(LockIntention.Readonly);
             }
         }
 
@@ -120,12 +115,12 @@
         {
             try
             {
-                Acquire(LockIntention.Exclusive);
+                _criticalSection.Acquire(LockIntention.Exclusive);
                 return function(_value);
             }
             finally
             {
-                Release(LockIntention.Exclusive);
+                _criticalSection.Release(LockIntention.Exclusive);
             }
         }
 
@@ -139,12 +134,12 @@
         {
             try
             {
-                Acquire(LockIntention.Readonly);
+                _criticalSection.Acquire(LockIntention.Readonly);
                 return function(_value);
             }
             finally
             {
-                Release(LockIntention.Readonly);
+                _criticalSection.Release(LockIntention.Readonly);
             }
         }
 
@@ -158,12 +153,12 @@
         {
             try
             {
-                Acquire(LockIntention.Exclusive);
+                _criticalSection.Acquire(LockIntention.Exclusive);
                 return function(_value);
             }
             finally
             {
-                Release(LockIntention.Exclusive);
+                _criticalSection.Release(LockIntention.Exclusive);
             }
         }
 
@@ -175,12 +170,12 @@
         {
             try
             {
-                Acquire(LockIntention.Readonly);
+                _criticalSection.Acquire(LockIntention.Readonly);
                 function(_value);
             }
             finally
             {
-                Release(LockIntention.Readonly);
+                _criticalSection.Release(LockIntention.Readonly);
             }
         }
 
@@ -192,12 +187,12 @@
         {
             try
             {
-                Acquire(LockIntention.Exclusive);
+                _criticalSection.Acquire(LockIntention.Exclusive);
                 function(_value);
             }
             finally
             {
-                Release(LockIntention.Exclusive);
+                _criticalSection.Release(LockIntention.Exclusive);
             }
         }
 
@@ -211,7 +206,7 @@
             wasLockObtained = false;
             try
             {
-                wasLockObtained = TryAcquire(LockIntention.Readonly);
+                wasLockObtained = _criticalSection.TryAcquire(LockIntention.Readonly);
                 if (wasLockObtained)
                 {
                     function(_value);
@@ -222,7 +217,7 @@
             {
                 if (wasLockObtained)
                 {
-                    Release(LockIntention.Readonly);
+                    _criticalSection.Release(LockIntention.Readonly);
                 }
             }
         }
@@ -238,7 +233,7 @@
             wasLockObtained = false;
             try
             {
-                wasLockObtained = TryAcquire(LockIntention.Exclusive);
+                wasLockObtained = _criticalSection.TryAcquire(LockIntention.Exclusive);
                 if (wasLockObtained)
                 {
                     function(_value);
@@ -249,7 +244,7 @@
             {
                 if (wasLockObtained)
                 {
-                    Release(LockIntention.Exclusive);
+                    _criticalSection.Release(LockIntention.Exclusive);
                 }
             }
         }
@@ -263,7 +258,7 @@
             bool wasLockObtained = false;
             try
             {
-                wasLockObtained = TryAcquire(LockIntention.Readonly);
+                wasLockObtained = _criticalSection.TryAcquire(LockIntention.Readonly);
                 if (wasLockObtained)
                 {
                     function(_value);
@@ -274,7 +269,7 @@
             {
                 if (wasLockObtained)
                 {
-                    Release(LockIntention.Readonly);
+                    _criticalSection.Release(LockIntention.Readonly);
                 }
             }
         }
@@ -288,7 +283,7 @@
             bool wasLockObtained = false;
             try
             {
-                wasLockObtained = TryAcquire(LockIntention.Exclusive);
+                wasLockObtained = _criticalSection.TryAcquire(LockIntention.Exclusive);
                 if (wasLockObtained)
                 {
                     function(_value);
@@ -299,7 +294,7 @@
             {
                 if (wasLockObtained)
                 {
-                    Release(LockIntention.Exclusive);
+                    _criticalSection.Release(LockIntention.Exclusive);
                 }
             }
         }
@@ -315,7 +310,7 @@
             wasLockObtained = false;
             try
             {
-                wasLockObtained = TryAcquire(LockIntention.Readonly, timeoutMilliseconds);
+                wasLockObtained = _criticalSection.TryAcquire(LockIntention.Readonly, timeoutMilliseconds);
                 if (wasLockObtained)
                 {
                     function(_value);
@@ -326,7 +321,7 @@
             {
                 if (wasLockObtained)
                 {
-                    Release(LockIntention.Readonly);
+                    _criticalSection.Release(LockIntention.Readonly);
                 }
             }
         }
@@ -342,7 +337,7 @@
             wasLockObtained = false;
             try
             {
-                wasLockObtained = TryAcquire(LockIntention.Exclusive, timeoutMilliseconds);
+                wasLockObtained = _criticalSection.TryAcquire(LockIntention.Exclusive, timeoutMilliseconds);
                 if (wasLockObtained)
                 {
                     function(_value);
@@ -353,7 +348,7 @@
             {
                 if (wasLockObtained)
                 {
-                    Release(LockIntention.Exclusive);
+                    _criticalSection.Release(LockIntention.Exclusive);
                 }
             }
         }
@@ -368,7 +363,7 @@
             bool wasLockObtained = false;
             try
             {
-                wasLockObtained = TryAcquire(LockIntention.Readonly, timeoutMilliseconds);
+                wasLockObtained = _criticalSection.TryAcquire(LockIntention.Readonly, timeoutMilliseconds);
                 if (wasLockObtained)
                 {
                     function(_value);
@@ -379,7 +374,7 @@
             {
                 if (wasLockObtained)
                 {
-                    Release(LockIntention.Readonly);
+                    _criticalSection.Release(LockIntention.Readonly);
                 }
             }
         }
@@ -394,7 +389,7 @@
             bool wasLockObtained = false;
             try
             {
-                wasLockObtained = TryAcquire(LockIntention.Exclusive, timeoutMilliseconds);
+                wasLockObtained = _criticalSection.TryAcquire(LockIntention.Exclusive, timeoutMilliseconds);
                 if (wasLockObtained)
                 {
                     function(_value);
@@ -405,7 +400,7 @@
             {
                 if (wasLockObtained)
                 {
-                    Release(LockIntention.Exclusive);
+                    _criticalSection.Release(LockIntention.Exclusive);
                 }
             }
         }
@@ -423,7 +418,7 @@
             wasLockObtained = false;
             try
             {
-                wasLockObtained = TryAcquire(LockIntention.Readonly);
+                wasLockObtained = _criticalSection.TryAcquire(LockIntention.Readonly);
                 if (wasLockObtained)
                 {
                     return function(_value);
@@ -433,7 +428,7 @@
             {
                 if (wasLockObtained)
                 {
-                    Release(LockIntention.Readonly);
+                    _criticalSection.Release(LockIntention.Readonly);
                 }
             }
             return default;
@@ -452,7 +447,7 @@
             wasLockObtained = false;
             try
             {
-                wasLockObtained = TryAcquire(LockIntention.Exclusive);
+                wasLockObtained = _criticalSection.TryAcquire(LockIntention.Exclusive);
                 if (wasLockObtained)
                 {
                     return function(_value);
@@ -462,7 +457,7 @@
             {
                 if (wasLockObtained)
                 {
-                    Release(LockIntention.Exclusive);
+                    _criticalSection.Release(LockIntention.Exclusive);
                 }
             }
             return default;
@@ -483,7 +478,7 @@
             wasLockObtained = false;
             try
             {
-                wasLockObtained = TryAcquire(LockIntention.Readonly, timeoutMilliseconds);
+                wasLockObtained = _criticalSection.TryAcquire(LockIntention.Readonly, timeoutMilliseconds);
                 if (wasLockObtained)
                 {
                     return function(_value);
@@ -493,7 +488,7 @@
             {
                 if (wasLockObtained)
                 {
-                    Release(LockIntention.Readonly);
+                    _criticalSection.Release(LockIntention.Readonly);
                 }
             }
 
@@ -515,7 +510,7 @@
             wasLockObtained = false;
             try
             {
-                wasLockObtained = TryAcquire(LockIntention.Exclusive, timeoutMilliseconds);
+                wasLockObtained = _criticalSection.TryAcquire(LockIntention.Exclusive, timeoutMilliseconds);
                 if (wasLockObtained)
                 {
                     return function(_value);
@@ -525,7 +520,7 @@
             {
                 if (wasLockObtained)
                 {
-                    Release(LockIntention.Exclusive);
+                    _criticalSection.Release(LockIntention.Exclusive);
                 }
             }
 
@@ -546,7 +541,7 @@
             wasLockObtained = false;
             try
             {
-                wasLockObtained = TryAcquire(LockIntention.Readonly);
+                wasLockObtained = _criticalSection.TryAcquire(LockIntention.Readonly);
                 if (wasLockObtained)
                 {
                     return function(_value);
@@ -556,7 +551,7 @@
             {
                 if (wasLockObtained)
                 {
-                    Release(LockIntention.Readonly);
+                    _criticalSection.Release(LockIntention.Readonly);
                 }
             }
             return defaultValue;
@@ -576,7 +571,7 @@
             wasLockObtained = false;
             try
             {
-                wasLockObtained = TryAcquire(LockIntention.Exclusive);
+                wasLockObtained = _criticalSection.TryAcquire(LockIntention.Exclusive);
                 if (wasLockObtained)
                 {
                     return function(_value);
@@ -586,7 +581,7 @@
             {
                 if (wasLockObtained)
                 {
-                    Release(LockIntention.Exclusive);
+                    _criticalSection.Release(LockIntention.Exclusive);
                 }
             }
             return defaultValue;
@@ -605,7 +600,7 @@
             bool wasLockObtained = false;
             try
             {
-                wasLockObtained = TryAcquire(LockIntention.Readonly);
+                wasLockObtained = _criticalSection.TryAcquire(LockIntention.Readonly);
                 if (wasLockObtained)
                 {
                     return function(_value);
@@ -615,7 +610,7 @@
             {
                 if (wasLockObtained)
                 {
-                    Release(LockIntention.Readonly);
+                    _criticalSection.Release(LockIntention.Readonly);
                 }
             }
             return defaultValue;
@@ -634,7 +629,7 @@
             bool wasLockObtained = false;
             try
             {
-                wasLockObtained = TryAcquire(LockIntention.Exclusive);
+                wasLockObtained = _criticalSection.TryAcquire(LockIntention.Exclusive);
                 if (wasLockObtained)
                 {
                     return function(_value);
@@ -644,7 +639,7 @@
             {
                 if (wasLockObtained)
                 {
-                    Release(LockIntention.Exclusive);
+                    _criticalSection.Release(LockIntention.Exclusive);
                 }
             }
             return defaultValue;
@@ -665,7 +660,7 @@
             wasLockObtained = false;
             try
             {
-                wasLockObtained = TryAcquire(LockIntention.Readonly, timeoutMilliseconds);
+                wasLockObtained = _criticalSection.TryAcquire(LockIntention.Readonly, timeoutMilliseconds);
                 if (wasLockObtained)
                 {
                     return function(_value);
@@ -675,7 +670,7 @@
             {
                 if (wasLockObtained)
                 {
-                    Release(LockIntention.Readonly);
+                    _criticalSection.Release(LockIntention.Readonly);
                 }
             }
 
@@ -697,7 +692,7 @@
             wasLockObtained = false;
             try
             {
-                wasLockObtained = TryAcquire(LockIntention.Exclusive, timeoutMilliseconds);
+                wasLockObtained = _criticalSection.TryAcquire(LockIntention.Exclusive, timeoutMilliseconds);
                 if (wasLockObtained)
                 {
                     return function(_value);
@@ -707,7 +702,7 @@
             {
                 if (wasLockObtained)
                 {
-                    Release(LockIntention.Exclusive);
+                    _criticalSection.Release(LockIntention.Exclusive);
                 }
             }
 
@@ -728,7 +723,7 @@
             bool wasLockObtained = false;
             try
             {
-                wasLockObtained = TryAcquire(LockIntention.Readonly, timeoutMilliseconds);
+                wasLockObtained = _criticalSection.TryAcquire(LockIntention.Readonly, timeoutMilliseconds);
                 if (wasLockObtained)
                 {
                     return function(_value);
@@ -738,7 +733,7 @@
             {
                 if (wasLockObtained)
                 {
-                    Release(LockIntention.Readonly);
+                    _criticalSection.Release(LockIntention.Readonly);
                 }
             }
 
@@ -759,7 +754,7 @@
             bool wasLockObtained = false;
             try
             {
-                wasLockObtained = TryAcquire(LockIntention.Exclusive, timeoutMilliseconds);
+                wasLockObtained = _criticalSection.TryAcquire(LockIntention.Exclusive, timeoutMilliseconds);
                 if (wasLockObtained)
                 {
                     return function(_value);
@@ -769,142 +764,11 @@
             {
                 if (wasLockObtained)
                 {
-                    Release(LockIntention.Exclusive);
+                    _criticalSection.Release(LockIntention.Exclusive);
                 }
             }
 
             return defaultValue;
-        }
-
-        #endregion
-
-        #region Internal lock controlls.
-
-        /// <summary>
-        /// Acquires a lock with and returns when it is held.
-        /// </summary>
-        /// <param name="intention"></param>
-        private void Acquire(LockIntention intention)
-        {
-            TryAcquire(intention, -1);
-        }
-
-        /// <summary>
-        /// Tries to acquire a lock one single time and then gives up.
-        /// </summary>
-        /// <param name="intention"></param>
-        /// <returns></returns>
-        private bool TryAcquire(LockIntention intention)
-        {
-            return TryAcquire(intention, 0);
-        }
-
-        /// <summary>
-        /// Tries to acquire a lock for a given time and then gives up.
-        /// </summary>
-        /// <param name="intention"></param>
-        /// <param name="timeoutMilliseconds"></param>
-        /// <returns></returns>
-        private bool TryAcquire(LockIntention intention, int timeoutMilliseconds)
-        {
-            int threadId = Environment.CurrentManagedThreadId;
-
-            DateTime? beginAttemptTime = timeoutMilliseconds > 0 ? DateTime.UtcNow : null;
-
-            do
-            {
-                bool isLockHeld = _locks.Use((o) =>
-                {
-                    var locksHeldByThisThread = o.Where(l => l.ThreadId == threadId).ToList();
-
-                    //Check to see if this thread already has a lock of the requested type.
-                    var existingExactLockByThisThread = locksHeldByThisThread.SingleOrDefault(l => l.LockType == intention);
-                    if (existingExactLockByThisThread != null)
-                    {
-                        //The thread already has the specified lock type, increment the reference count and return.
-                        existingExactLockByThisThread.ReferenceCount++;
-                        return true;
-                    }
-
-                    //This thread needs to acquire a new read-only lock.
-                    if (intention == LockIntention.Readonly)
-                    {
-                        //Check to see if this thread already holds a more restrictive lock.
-                        if (locksHeldByThisThread.Any(l => l.LockType == LockIntention.Exclusive))
-                        {
-                            //The current thread already has an exclusive lock, so we automatically grant a read-lock.
-                            o.Add(new HeldLock(threadId, intention));
-                            _locksModifiedEvent.Set(); //Let any waiting lock acquisitions know they can try again.
-                            return true;
-                        }
-
-                        //Check to make sure there are no existing exclusive locks.
-                        if (o.Any(l => l.LockType == LockIntention.Exclusive) == false)
-                        {
-                            //This thread is seeking a read-only lock and there are no exclusive locks. Grant the read-lock.
-                            o.Add(new HeldLock(threadId, intention));
-                            _locksModifiedEvent.Set(); //Let any waiting lock acquisitions know they can try again.
-                            return true;
-                        }
-                    }
-
-                    //This thread needs to acquire a new exclusive lock.
-                    if (intention == LockIntention.Exclusive)
-                    {
-                        //Check to see if there are any existig locks (other than the ones held by the current thread).
-                        //Read locks held by this thread DO NOT block new exclusive locks by the same thread.
-                        if (o.Where(l => l.ThreadId != threadId).Any() == false)
-                        {
-                            //This thread is seeking a exclusive lock and there are no incompativle read-only locks. Grant the exclusive-lock.
-                            o.Add(new HeldLock(threadId, intention));
-                            _locksModifiedEvent.Set(); //Let any waiting lock acquisitions know they can try again.
-                            return true;
-                        }
-                    }
-
-                    return false; //We were unable to get a non-conflicting lock.
-                });
-
-                if (isLockHeld)
-                {
-                    //If we were able to acquire a lock, return true.
-                    return true;
-                }
-
-                _locksModifiedEvent.WaitOne(1);
-            }
-            while (beginAttemptTime == null || (DateTime.UtcNow - (DateTime)beginAttemptTime).TotalMilliseconds < timeoutMilliseconds);
-
-            //Return false because we timed out while attempting to acquire the lock.
-            return false;
-        }
-
-        private void Release(LockIntention intention)
-        {
-            int threadId = Environment.CurrentManagedThreadId;
-
-            _locks.Use((o) =>
-            {
-                var heldLock = o.Where(l => l.ThreadId == threadId && l.LockType == intention).SingleOrDefault();
-
-                if (heldLock == null)
-                {
-                    throw new Exception("The thread lock reference was not found in the collection.");
-                }
-
-                heldLock.ReferenceCount--;
-
-                if (heldLock.ReferenceCount == 0)
-                {
-                    //We have derefrenced all of this threads locks of the intended type. Remove the lock from the collection.
-                    o.Remove(heldLock);
-                    _locksModifiedEvent.Set(); //Let any waiting lock acquisitions know they can try again.
-                }
-                else if (heldLock.ReferenceCount < 0)
-                {
-                    throw new Exception("The thread lock reference count fell below zero.");
-                }
-            });
         }
 
         #endregion

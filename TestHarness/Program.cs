@@ -1,6 +1,4 @@
-﻿using NTDLS.Semaphore;
-
-namespace TestHarness
+﻿namespace TestHarness
 {
     internal class Program
     {

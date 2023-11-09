@@ -75,7 +75,7 @@
         }
 
         /// <summary>
-        /// Envelopes a variable with a set value, using a predefined critical section.
+        /// Envelopes a variable using a predefined critical section.
         /// If other pessimistic semaphores use the same critical section, they will require the exclusive lock of the shared critical section.
         /// </summary>
         /// <param name="criticalSection"></param>
