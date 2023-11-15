@@ -3,11 +3,33 @@
 namespace NTDLS.Semaphore
 {
     /// <summary>
-    /// The optimistic critical section that is at the core of the optimistic semaphore.
-    /// Can be instantiated externally and chared across optimistic semaphores
+    /// Both optimistic and pessimistic critical sections must inherit from this interface.
     /// </summary>
-    public interface IOptimisticCriticalSection
+    public interface ICriticalSection
     {
+        /// <summary>
+        /// Internal use only. Blocks until the lock is acquired.
+        /// </summary>
+        public void Acquire();
+
+        /// <summary>
+        /// Internal use only. Releases the previously acquired lock.
+        /// </summary>
+        public void Release();
+
+        /// <summary>
+        /// Internal use only. Attempts to acquire the lock for a given number of milliseconds.
+        /// </summary>
+        /// <param name="timeoutMilliseconds"></param>
+        /// <returns></returns>
+        public bool TryAcquire(int timeoutMilliseconds);
+
+        /// <summary>
+        /// Internal use only. Attempts to acquire the lock.
+        /// </summary>
+        /// <returns></returns>
+        public bool TryAcquire();
+
         /// <summary>
         /// Acquires a lock with and returns when it is held.
         /// </summary>

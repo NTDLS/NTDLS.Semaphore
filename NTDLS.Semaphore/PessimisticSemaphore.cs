@@ -4,16 +4,16 @@
     /// Protects a variable from parallel / non-sequential thread access by always acquiring an exclusive lock on the resource. 
     /// </summary>
     /// <typeparam name="T">The type of the resource that will be instantiated and protected.</typeparam>
-    public class PessimisticSemaphore<T> : IPessimisticCriticalSection where T : class, new()
+    public class PessimisticSemaphore<T> : ICriticalSection where T : class, new()
     {
         #region Local Classes.
 
         private class CriticalCollection
         {
-            public IPessimisticCriticalSection Resource { get; set; }
+            public ICriticalSection Resource { get; set; }
             public bool IsLockHeld { get; set; } = false;
 
-            public CriticalCollection(IPessimisticCriticalSection resource)
+            public CriticalCollection(ICriticalSection resource)
             {
                 Resource = resource;
             }
@@ -21,7 +21,7 @@
 
         #endregion
 
-        private readonly IPessimisticCriticalSection _criticalSection;
+        private readonly ICriticalSection _criticalSection;
         private readonly T _value;
 
         #region Delegates.
@@ -79,7 +79,7 @@
         /// If other pessimistic semaphores use the same critical section, they will require the exclusive lock of the shared critical section.
         /// </summary>
         /// <param name="criticalSection"></param>
-        public PessimisticSemaphore(IPessimisticCriticalSection criticalSection)
+        public PessimisticSemaphore(ICriticalSection criticalSection)
         {
             _value = new T();
             _criticalSection = criticalSection;
@@ -91,7 +91,7 @@
         /// </summary>
         /// <param name="value"></param>
         /// <param name="criticalSection"></param>
-        public PessimisticSemaphore(T value, IPessimisticCriticalSection criticalSection)
+        public PessimisticSemaphore(T value, ICriticalSection criticalSection)
         {
             _value = value;
             _criticalSection = criticalSection;
@@ -101,7 +101,7 @@
         /// Block until the lock is acquired then executes the delegate function and returns the non-nullable value from the delegate function.
         /// </summary>
         /// <typeparam name="R"></typeparam>
-        /// <param name="function"></param>
+        /// <param name="function">The delegate function to execute when the lock is acquired.</param>
         /// <returns></returns>
         public R Use<R>(CriticalResourceDelegateWithNotNullableResultT<R> function)
         {
@@ -120,7 +120,7 @@
         /// Block until the lock is acquired then executes the delegate function and return the nullable value from the delegate function.
         /// </summary>
         /// <typeparam name="R"></typeparam>
-        /// <param name="function"></param>
+        /// <param name="function">The delegate function to execute when the lock is acquired.</param>
         /// <returns></returns>
         public R? UseNullable<R>(CriticalResourceDelegateWithNullableResultT<R> function)
         {
@@ -138,10 +138,10 @@
         /// <summary>
         /// Attmepts to acquire the lock. If successful, executes the delegate function.
         /// </summary>
-        /// <param name="resources"></param>
-        /// <param name="wasLockObtained"></param>
-        /// <param name="function"></param>
-        public void TryUseAll(IPessimisticCriticalSection[] resources, out bool wasLockObtained, CriticalResourceDelegateWithVoidResult function)
+        /// <param name="resources">The array of other locks that must be obtained.</param>
+        /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
+        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
+        public void TryUseAll(PessimisticSemaphore<T>[] resources, out bool wasLockObtained, CriticalResourceDelegateWithVoidResult function)
         {
             var collection = new CriticalCollection[resources.Length];
 
@@ -189,11 +189,11 @@
         /// <summary>
         /// Attmepts to acquire the lock for the specified number of milliseconds. If successful, executes the delegate function.
         /// </summary>
-        /// <param name="resources"></param>
-        /// <param name="timeoutMilliseconds"></param>
-        /// <param name="wasLockObtained"></param>
-        /// <param name="function"></param>
-        public void TryUseAll(IPessimisticCriticalSection[] resources, int timeoutMilliseconds, out bool wasLockObtained, CriticalResourceDelegateWithVoidResult function)
+        /// <param name="resources">The array of other locks that must be obtained.</param>
+        /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
+        /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
+        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
+        public void TryUseAll(ICriticalSection[] resources, int timeoutMilliseconds, out bool wasLockObtained, CriticalResourceDelegateWithVoidResult function)
         {
             var collection = new CriticalCollection[resources.Length];
 
@@ -242,11 +242,11 @@
         /// Attmepts to acquire the lock. If successful, executes the delegate function and returns the nullable value from the delegate function.
         /// </summary>
         /// <typeparam name="R"></typeparam>
-        /// <param name="resources"></param>
-        /// <param name="wasLockObtained"></param>
-        /// <param name="function"></param>
+        /// <param name="resources">The array of other locks that must be obtained.</param>
+        /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
+        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
         /// <returns></returns>
-        public R? TryUseAll<R>(IPessimisticCriticalSection[] resources, out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R> function)
+        public R? TryUseAll<R>(ICriticalSection[] resources, out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R> function)
         {
             var collection = new CriticalCollection[resources.Length];
 
@@ -297,12 +297,12 @@
         /// Otherwise returns the given default value.
         /// </summary>
         /// <typeparam name="R"></typeparam>
-        /// <param name="resources"></param>
-        /// <param name="wasLockObtained"></param>
-        /// <param name="defaultValue"></param>
-        /// <param name="function"></param>
+        /// <param name="resources">The array of other locks that must be obtained.</param>
+        /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
+        /// <param name="defaultValue">The value to obtain if the lock could not be acquired.</param>
+        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
         /// <returns></returns>
-        public R TryUseAll<R>(IPessimisticCriticalSection[] resources, out bool wasLockObtained, R defaultValue, CriticalResourceDelegateWithNotNullableResultT<R> function)
+        public R TryUseAll<R>(ICriticalSection[] resources, out bool wasLockObtained, R defaultValue, CriticalResourceDelegateWithNotNullableResultT<R> function)
         {
             var collection = new CriticalCollection[resources.Length];
 
@@ -353,13 +353,13 @@
         /// returns the non-nullable value from the delegate function. Otherwise returns the given default value.
         /// </summary>
         /// <typeparam name="R"></typeparam>
-        /// <param name="resources"></param>
-        /// <param name="timeoutMilliseconds"></param>
-        /// <param name="wasLockObtained"></param>
-        /// <param name="defaultValue"></param>
-        /// <param name="function"></param>
+        /// <param name="resources">The array of other locks that must be obtained.</param>
+        /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
+        /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
+        /// <param name="defaultValue">The value to obtain if the lock could not be acquired.</param>
+        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
         /// <returns></returns>
-        public R? TryUseAll<R>(IPessimisticCriticalSection[] resources, int timeoutMilliseconds, out bool wasLockObtained, R defaultValue, CriticalResourceDelegateWithNullableResultT<R> function)
+        public R? TryUseAll<R>(ICriticalSection[] resources, int timeoutMilliseconds, out bool wasLockObtained, R defaultValue, CriticalResourceDelegateWithNullableResultT<R> function)
         {
             var collection = new CriticalCollection[resources.Length];
 
@@ -410,12 +410,12 @@
         /// returns the nullable value from the delegate function. Otherwise returns null.
         /// </summary>
         /// <typeparam name="R"></typeparam>
-        /// <param name="resources"></param>
-        /// <param name="timeoutMilliseconds"></param>
-        /// <param name="wasLockObtained"></param>
-        /// <param name="function"></param>
+        /// <param name="resources">The array of other locks that must be obtained.</param>
+        /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
+        /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
+        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
         /// <returns></returns>
-        public R? TryUseAll<R>(IPessimisticCriticalSection[] resources, int timeoutMilliseconds, out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R> function)
+        public R? TryUseAll<R>(ICriticalSection[] resources, int timeoutMilliseconds, out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R> function)
         {
             var collection = new CriticalCollection[resources.Length];
 
@@ -466,10 +466,10 @@
         /// returns the nullable value from the delegate function. Otherwise returns null.
         /// </summary>
         /// <typeparam name="R"></typeparam>
-        /// <param name="resources"></param>
-        /// <param name="function"></param>
+        /// <param name="resources">The array of other locks that must be obtained.</param>
+        /// <param name="function">The delegate function to execute when the lock is acquired.</param>
         /// <returns></returns>
-        public R? UseAll<R>(IPessimisticCriticalSection[] resources, CriticalResourceDelegateWithNullableResultT<R> function)
+        public R? UseAll<R>(ICriticalSection[] resources, CriticalResourceDelegateWithNullableResultT<R> function)
         {
             Acquire();
 
@@ -500,10 +500,10 @@
         /// returns the non-nullable value from the delegate function.
         /// </summary>
         /// <typeparam name="R"></typeparam>
-        /// <param name="resources"></param>
-        /// <param name="function"></param>
+        /// <param name="resources">The array of other locks that must be obtained.</param>
+        /// <param name="function">The delegate function to execute when the lock is acquired.</param>
         /// <returns></returns>
-        public R UseAll<R>(IPessimisticCriticalSection[] resources, CriticalResourceDelegateWithNotNullableResultT<R> function)
+        public R UseAll<R>(ICriticalSection[] resources, CriticalResourceDelegateWithNotNullableResultT<R> function)
         {
             Acquire();
 
@@ -532,9 +532,9 @@
         /// <summary>
         /// Blocks until the base lock as well as all supplied locks are acquired then executes the delegate function.
         /// </summary>
-        /// <param name="resources"></param>
-        /// <param name="function"></param>
-        public void UseAll(IPessimisticCriticalSection[] resources, CriticalResourceDelegateWithVoidResult function)
+        /// <param name="resources">The array of other locks that must be obtained.</param>
+        /// <param name="function">The delegate function to execute when the lock is acquired.</param>
+        public void UseAll(ICriticalSection[] resources, CriticalResourceDelegateWithVoidResult function)
         {
             Acquire();
 
@@ -561,7 +561,7 @@
         /// <summary>
         /// Blocks until the lock is acquired then executes the delegate function.
         /// </summary>
-        /// <param name="function"></param>
+        /// <param name="function">The delegate function to execute when the lock is acquired.</param>
         public void Use(CriticalResourceDelegateWithVoidResult function)
         {
             try
@@ -578,8 +578,8 @@
         /// <summary>
         /// Attempts to acquire the lock, if successful then executes the delegate function.
         /// </summary>
-        /// <param name="wasLockObtained"></param>
-        /// <param name="function"></param>
+        /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
+        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
         public void TryUse(out bool wasLockObtained, CriticalResourceDelegateWithVoidResult function)
         {
             wasLockObtained = false;
@@ -604,7 +604,7 @@
         /// <summary>
         /// Attempts to acquire the lock, if successful then executes the delegate function.
         /// </summary>
-        /// <param name="function"></param>
+        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
         public void TryUse(CriticalResourceDelegateWithVoidResult function)
         {
             bool wasLockObtained = false;
@@ -629,9 +629,9 @@
         /// <summary>
         /// Attempts to acquire the lock for the given number of milliseconds, if successful then executes the delegate function.
         /// </summary>
-        /// <param name="wasLockObtained"></param>
-        /// <param name="timeoutMilliseconds"></param>
-        /// <param name="function"></param>
+        /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
+        /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
+        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
         public void TryUse(out bool wasLockObtained, int timeoutMilliseconds, CriticalResourceDelegateWithVoidResult function)
         {
             wasLockObtained = false;
@@ -656,8 +656,8 @@
         /// <summary>
         /// Attempts to acquire the lock for the given number of milliseconds, if successful then executes the delegate function.
         /// </summary>
-        /// <param name="timeoutMilliseconds"></param>
-        /// <param name="function"></param>
+        /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
+        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
         public void TryUse(int timeoutMilliseconds, CriticalResourceDelegateWithVoidResult function)
         {
             bool wasLockObtained = false;
@@ -684,8 +684,8 @@
         /// Otherwise returns null.
         /// </summary>
         /// <typeparam name="R"></typeparam>
-        /// <param name="wasLockObtained"></param>
-        /// <param name="function"></param>
+        /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
+        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
         /// <returns></returns>
         public R? TryUse<R>(out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R> function)
         {
@@ -713,9 +713,9 @@
         /// Otherwise returns null.
         /// </summary>
         /// <typeparam name="R"></typeparam>
-        /// <param name="wasLockObtained"></param>
-        /// <param name="timeoutMilliseconds"></param>
-        /// <param name="function"></param>
+        /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
+        /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
+        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
         /// <returns></returns>
 
         public R? TryUse<R>(out bool wasLockObtained, int timeoutMilliseconds, CriticalResourceDelegateWithNullableResultT<R> function)
@@ -745,9 +745,9 @@
         /// Otherwise returns the supplied default value.
         /// </summary>
         /// <typeparam name="R"></typeparam>
-        /// <param name="wasLockObtained"></param>
-        /// <param name="defaultValue"></param>
-        /// <param name="function"></param>
+        /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
+        /// <param name="defaultValue">The value to obtain if the lock could not be acquired.</param>
+        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
         /// <returns></returns>
         public R TryUse<R>(out bool wasLockObtained, R defaultValue, CriticalResourceDelegateWithNotNullableResultT<R> function)
         {
@@ -775,8 +775,8 @@
         /// Otherwise returns the supplied default value.
         /// </summary>
         /// <typeparam name="R"></typeparam>
-        /// <param name="defaultValue"></param>
-        /// <param name="function"></param>
+        /// <param name="defaultValue">The value to obtain if the lock could not be acquired.</param>
+        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
         /// <returns></returns>
         public R TryUse<R>(R defaultValue, CriticalResourceDelegateWithNotNullableResultT<R> function)
         {
@@ -804,10 +804,10 @@
         /// Otherwise returns the supplied default value.
         /// </summary>
         /// <typeparam name="R"></typeparam>
-        /// <param name="wasLockObtained"></param>
-        /// <param name="defaultValue"></param>
-        /// <param name="timeoutMilliseconds"></param>
-        /// <param name="function"></param>
+        /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
+        /// <param name="defaultValue">The value to obtain if the lock could not be acquired.</param>
+        /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
+        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
         /// <returns></returns>
         public R TryUse<R>(out bool wasLockObtained, R defaultValue, int timeoutMilliseconds, CriticalResourceDelegateWithNotNullableResultT<R> function)
         {
@@ -836,9 +836,9 @@
         /// Otherwise returns the supplied default value.
         /// </summary>
         /// <typeparam name="R"></typeparam>
-        /// <param name="defaultValue"></param>
-        /// <param name="timeoutMilliseconds"></param>
-        /// <param name="function"></param>
+        /// <param name="defaultValue">The value to obtain if the lock could not be acquired.</param>
+        /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
+        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
         /// <returns></returns>
         public R TryUse<R>(R defaultValue, int timeoutMilliseconds, CriticalResourceDelegateWithNotNullableResultT<R> function)
         {
@@ -867,48 +867,86 @@
         /// <summary>
         /// Internal use only. Attempts to acquire the lock for a given number of milliseconds.
         /// </summary>
-        /// <param name="timeoutMilliseconds"></param>
+        /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
         /// <returns></returns>
-        bool IPessimisticCriticalSection.TryAcquire(int timeoutMilliseconds) => TryAcquire(timeoutMilliseconds);
+        bool ICriticalSection.TryAcquire(int timeoutMilliseconds)
+            => TryAcquire(timeoutMilliseconds);
 
         /// <summary>
         /// Internal use only. Attempts to acquire the lock.
         /// </summary>
         /// <returns></returns>
-        bool IPessimisticCriticalSection.TryAcquire() => TryAcquire();
+        bool ICriticalSection.TryAcquire()
+            => TryAcquire();
 
         /// <summary>
         /// Internal use only. Blocks until the lock is acquired.
         /// </summary>
-        void IPessimisticCriticalSection.Acquire() => Acquire();
+        void ICriticalSection.Acquire()
+            => Acquire();
 
         /// <summary>
         /// Internal use only. Releases the previously acquired lock.
         /// </summary>
-        void IPessimisticCriticalSection.Release() => Release();
+        void ICriticalSection.Release()
+            => Release();
 
         /// <summary>
         /// Internal use only. Attempts to acquire the lock for a given number of milliseconds.
         /// </summary>
-        /// <param name="timeoutMilliseconds"></param>
+        /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
         /// <returns></returns>
-        private bool TryAcquire(int timeoutMilliseconds) => _criticalSection.TryAcquire(timeoutMilliseconds);
+        private bool TryAcquire(int timeoutMilliseconds)
+            => _criticalSection.TryAcquire(timeoutMilliseconds);
 
         /// <summary>
         /// Internal use only. Attempts to acquire the lock.
         /// </summary>
         /// <returns></returns>
-        private bool TryAcquire() => _criticalSection.TryAcquire();
+        private bool TryAcquire()
+            => _criticalSection.TryAcquire();
 
         /// <summary>
         /// Internal use only. Blocks until the lock is acquired.
         /// </summary>
-        private void Acquire() => _criticalSection.Acquire();
+        private void Acquire()
+            => _criticalSection.Acquire();
 
         /// <summary>
         /// Internal use only. Releases the previously acquired lock.
         /// </summary>
-        private void Release() => _criticalSection.Release();
+        private void Release()
+            => _criticalSection.Release();
+
+        /// <summary>
+        /// Internal use only. Blocks until the lock is acquired.
+        /// This implemented so that a PessimisticSemaphore can be locked via a call to OptimisticSemaphore...All().
+        /// </summary>
+        void ICriticalSection.Acquire(OptimisticCriticalSection.LockIntention intention)
+            => Acquire();
+
+        /// <summary>
+        /// Internal use only. Attempts to acquire the lock.
+        /// This implemented so that a PessimisticSemaphore can be locked via a call to OptimisticSemaphore...All().
+        /// </summary>
+        /// <returns></returns>
+        bool ICriticalSection.TryAcquire(OptimisticCriticalSection.LockIntention intention)
+            => TryAcquire();
+
+        /// <summary>
+        /// Internal use only. Attempts to acquire the lock.
+        /// This implemented so that a PessimisticSemaphore can be locked via a call to OptimisticSemaphore...All().
+        /// </summary>
+        /// <returns></returns>
+        bool ICriticalSection.TryAcquire(OptimisticCriticalSection.LockIntention intention, int timeoutMilliseconds)
+            => TryAcquire(timeoutMilliseconds);
+
+        /// <summary>
+        /// Internal use only. Releases the previously acquired lock.
+        /// This implemented so that a PessimisticSemaphore can be locked via a call to OptimisticSemaphore...All().
+        /// </summary>
+        void ICriticalSection.Release(OptimisticCriticalSection.LockIntention intention)
+            => Release();
 
         #endregion
     }

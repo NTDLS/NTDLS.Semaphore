@@ -2,9 +2,9 @@
 
 namespace TestHarness
 {
-    internal class TestCriticalSection
+    internal class TestOptimisticCriticalSection
     {
-        private readonly PessimisticCriticalSection _genericCS = new();
+        private readonly OptimisticCriticalSection _genericCS = new();
         private readonly List<Thread> _threads = new();
         private readonly List<string> _listOfObjects = new();
 
@@ -33,7 +33,7 @@ namespace TestHarness
 
         private void ThreadProc()
         {
-            _genericCS.Use(() =>
+            _genericCS.Read(() =>
             {
                 foreach (var item in _listOfObjects)
                 {
@@ -42,10 +42,16 @@ namespace TestHarness
                         //Just doing random work to make the iterator take more time.
                     }
                 }
+            });
 
+            _genericCS.Write(() =>
+            {
                 //Removing items will break the above iterator in other threads.
                 _listOfObjects.RemoveAll(o => o.StartsWith(Guid.NewGuid().ToString().Substring(0, 2)));
+            });
 
+            _genericCS.Write(() =>
+            {
                 //Adding items will also break the above iterator in other threads.
                 for (int i = 0; i < _objectsPerIteration; i++)
                 {
