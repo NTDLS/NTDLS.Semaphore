@@ -2,7 +2,7 @@
   <PropertyGroup>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <TargetFrameworks>net6.0;net7.0</TargetFrameworks>
+    <TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <Title>NTDLS.Semaphore</Title>
@@ -14,21 +14,15 @@
     <RepositoryUrl>https://github.com/NTDLS/NTDLS.Semaphore</RepositoryUrl>
     <PackageTags>threading;critical-section;semaphore;parallel-execution;sequential-execution</PackageTags>
     <PackageReleaseNotes>
-      Added OptimisticCriticalSection public functions with return results.
-      Added OptimisticCriticalSection public functions.
-      Added OptimisticSemaphore to allow for concurrent reads.
-      Added OptimisticSemaphore Read/Write all support.
-      Added shared critical section support for optimistic semaphores.
-      Soft breaking changes with class renames and namespace movements.
-      Cleaned up what should have been private interface methods from CriticalSection.
+      .net8
     </PackageReleaseNotes>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <Authors>NetworkDLS</Authors>
     <Company>NetworkDLS</Company>
-    <AssemblyVersion>2.2.2</AssemblyVersion>
-    <FileVersion>2.2.2</FileVersion>
-    <VersionPrefix>2.2.2</VersionPrefix>
+    <AssemblyVersion>2.2.5</AssemblyVersion>
+    <FileVersion>2.2.5</FileVersion>
+    <VersionPrefix>2.2.5</VersionPrefix>
     <version></version>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>Logo.png</PackageIcon>

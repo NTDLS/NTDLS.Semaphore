@@ -187,6 +187,13 @@
                 }
 
                 _locksModifiedEvent.WaitOne(1);
+
+                if (timeoutMilliseconds == 0)
+                {
+                    //timeoutMilliseconds == 0 means try only once.
+                    break;
+                }
+
             }
             while (beginAttemptTime == null || (DateTime.UtcNow - (DateTime)beginAttemptTime).TotalMilliseconds < timeoutMilliseconds);
 
