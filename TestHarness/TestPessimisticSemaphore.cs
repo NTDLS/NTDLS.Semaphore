@@ -7,8 +7,8 @@ namespace TestHarness
         private readonly PessimisticSemaphore<List<string>> _listOfObjects = new();
         private readonly List<Thread> _threads = new();
 
-        const int _threadsToCreate = 10;
-        const int _objectsPerIteration = 10000;
+        private const int _threadsToCreate = 10;
+        private const int _objectsPerIteration = 10000;
 
         public double Execute()
         {

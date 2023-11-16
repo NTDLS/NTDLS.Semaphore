@@ -5,7 +5,7 @@ VisualStudioVersion = 17.6.33829.357
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NTDLS.Semaphore", "NTDLS.Semaphore\NTDLS.Semaphore.csproj", "{872C8724-912A-4CD1-B23C-0EF19A170A3A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestHarness", "TestHarness\TestHarness.csproj", "{97436447-6E97-4E8D-8F5A-9EF8CCEC36B3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestHarness", "TestHarness\TestHarness.csproj", "{97436447-6E97-4E8D-8F5A-9EF8CCEC36B3}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{979A1647-B5F2-41E7-A058-89AD6CCFCE08}"
 	ProjectSection(SolutionItems) = preProject

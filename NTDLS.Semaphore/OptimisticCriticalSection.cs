@@ -65,28 +65,54 @@
 
         #endregion
 
+        private void RegisterLock(LockIntention intention)
+        {
+            if (ThreadOwnershipTracking.LockRegistration != null)
+            {
+                lock (ThreadOwnershipTracking.LockRegistration)
+                {
+                    ThreadOwnershipTracking.LockRegistration.TryAdd($"Optimistic:CS:{intention}:{Environment.CurrentManagedThreadId}:{GetHashCode()}", this);
+                }
+            }
+        }
+
+        private void DeregisterLock(LockIntention intention)
+        {
+            if (ThreadOwnershipTracking.LockRegistration != null)
+            {
+                lock (ThreadOwnershipTracking.LockRegistration)
+                {
+                    ThreadOwnershipTracking.LockRegistration.Remove($"Optimistic:CS:{intention}:{Environment.CurrentManagedThreadId}:{GetHashCode()}");
+                }
+            }
+        }
+
         #region Internal lock controls.
 
         /// <summary>
         /// Acquires an exclusive lock.
+        /// This implemented so that a PessimisticSemaphore can be locked via a call to OptimisticSemaphore...All().
         /// </summary>
         void ICriticalSection.Acquire()
             => Acquire(LockIntention.Exclusive);
 
         /// <summary>
         /// Releases an exclusive lock.
+        /// This implemented so that a PessimisticSemaphore can be locked via a call to OptimisticSemaphore...All().
         /// </summary>
         void ICriticalSection.Release()
             => Release(LockIntention.Exclusive);
 
         /// <summary>
         /// Acquires an exclusive lock.
+        /// This implemented so that a PessimisticSemaphore can be locked via a call to OptimisticSemaphore...All().
         /// </summary>
         bool ICriticalSection.TryAcquire()
             => TryAcquire(LockIntention.Exclusive);
 
         /// <summary>
         /// Releases an exclusive lock.
+        /// This implemented so that a PessimisticSemaphore can be locked via a call to OptimisticSemaphore...All().
         /// </summary>
         bool ICriticalSection.TryAcquire(int timeoutMilliseconds)
             => TryAcquire(LockIntention.Exclusive, timeoutMilliseconds);
@@ -173,6 +199,7 @@
                         {
                             //The current thread already has an exclusive lock, so we automatically grant a read-lock.
                             o.Add(new HeldLock(threadId, intention));
+                            RegisterLock(intention);
                             _locksModifiedEvent.Set(); //Let any waiting lock acquisitions know they can try again.
                             return true;
                         }
@@ -182,6 +209,7 @@
                         {
                             //This thread is seeking a read-only lock and there are no exclusive locks. Grant the read-lock.
                             o.Add(new HeldLock(threadId, intention));
+                            RegisterLock(intention);
                             _locksModifiedEvent.Set(); //Let any waiting lock acquisitions know they can try again.
                             return true;
                         }
@@ -196,6 +224,7 @@
                         {
                             //This thread is seeking a exclusive lock and there are no incompativle read-only locks. Grant the exclusive-lock.
                             o.Add(new HeldLock(threadId, intention));
+                            RegisterLock(intention);
                             _locksModifiedEvent.Set(); //Let any waiting lock acquisitions know they can try again.
                             return true;
                         }
@@ -249,6 +278,7 @@
                 {
                     //We have derefrenced all of this threads locks of the intended type. Remove the lock from the collection.
                     o.Remove(heldLock);
+                    DeregisterLock(intention);
                     _locksModifiedEvent.Set(); //Let any waiting lock acquisitions know they can try again.
                 }
                 else if (heldLock.ReferenceCount < 0)

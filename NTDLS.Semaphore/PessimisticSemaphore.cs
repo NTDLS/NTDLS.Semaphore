@@ -21,6 +21,10 @@
 
         #endregion
 
+        /// <summary>
+        /// Identifies the current thread that owns the lock.
+        /// </summary>
+        public Thread? CurrentOwnerThread { get; private set; }
         private readonly ICriticalSection _criticalSection;
         private readonly T _value;
 
@@ -50,10 +54,93 @@
 
         #endregion
 
+        #region Internal interface functionality.
+
         /// <summary>
-        /// Identifies the current thread that owns the lock.
+        /// Internal use only. Attempts to acquire the lock for a given number of milliseconds.
         /// </summary>
-        public Thread? OwnerThread { get; private set; }
+        /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
+        /// <returns></returns>
+        bool ICriticalSection.TryAcquire(int timeoutMilliseconds)
+            => TryAcquire(timeoutMilliseconds);
+
+        /// <summary>
+        /// Internal use only. Attempts to acquire the lock.
+        /// </summary>
+        /// <returns></returns>
+        bool ICriticalSection.TryAcquire()
+            => TryAcquire();
+
+        /// <summary>
+        /// Internal use only. Blocks until the lock is acquired.
+        /// </summary>
+        void ICriticalSection.Acquire()
+            => Acquire();
+
+        /// <summary>
+        /// Internal use only. Releases the previously acquired lock.
+        /// </summary>
+        void ICriticalSection.Release()
+            => Release();
+
+        /// <summary>
+        /// Internal use only. Attempts to acquire the lock for a given number of milliseconds.
+        /// </summary>
+        /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
+        /// <returns></returns>
+        private bool TryAcquire(int timeoutMilliseconds)
+            => _criticalSection.TryAcquire(timeoutMilliseconds);
+
+        /// <summary>
+        /// Internal use only. Attempts to acquire the lock.
+        /// </summary>
+        /// <returns></returns>
+        private bool TryAcquire()
+            => _criticalSection.TryAcquire();
+
+        /// <summary>
+        /// Internal use only. Blocks until the lock is acquired.
+        /// </summary>
+        private void Acquire()
+            => _criticalSection.Acquire();
+
+        /// <summary>
+        /// Internal use only. Releases the previously acquired lock.
+        /// </summary>
+        private void Release()
+            => _criticalSection.Release();
+
+        /// <summary>
+        /// Internal use only. Blocks until the lock is acquired.
+        /// This implemented so that a PessimisticSemaphore can be locked via a call to OptimisticSemaphore...All().
+        /// </summary>
+        void ICriticalSection.Acquire(OptimisticCriticalSection.LockIntention intention)
+            => Acquire();
+
+        /// <summary>
+        /// Internal use only. Attempts to acquire the lock.
+        /// This implemented so that a PessimisticSemaphore can be locked via a call to OptimisticSemaphore...All().
+        /// </summary>
+        /// <returns></returns>
+        bool ICriticalSection.TryAcquire(OptimisticCriticalSection.LockIntention intention)
+            => TryAcquire();
+
+        /// <summary>
+        /// Internal use only. Attempts to acquire the lock.
+        /// This implemented so that a PessimisticSemaphore can be locked via a call to OptimisticSemaphore...All().
+        /// </summary>
+        /// <returns></returns>
+        bool ICriticalSection.TryAcquire(OptimisticCriticalSection.LockIntention intention, int timeoutMilliseconds)
+            => TryAcquire(timeoutMilliseconds);
+
+        /// <summary>
+        /// Internal use only. Releases the previously acquired lock.
+        /// This implemented so that a PessimisticSemaphore can be locked via a call to OptimisticSemaphore...All().
+        /// </summary>
+        void ICriticalSection.Release(OptimisticCriticalSection.LockIntention intention)
+            => Release();
+
+        #endregion
 
         /// <summary>
         /// Initializes a new pessimistic semaphore that envelopes a variable.
@@ -139,9 +226,34 @@
         /// Attmepts to acquire the lock. If successful, executes the delegate function.
         /// </summary>
         /// <param name="resources">The array of other locks that must be obtained.</param>
+        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
+        /// <returns>Returns true if the lock was obtained.</returns>
+        public bool TryUseAll(ICriticalSection[] resources, CriticalResourceDelegateWithVoidResult function)
+        {
+            TryUseAll(resources, out bool wasLockObtained, function);
+            return wasLockObtained;
+        }
+
+        /// <summary>
+        /// Attmepts to acquire the lock. If successful, executes the delegate function.
+        /// </summary>
+        /// <param name="resources">The array of other locks that must be obtained.</param>
+        /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
+        /// /// <param name="function">The delegate function to execute if the lock is acquired.</param>
+        /// <returns>Returns true if the lock was obtained.</returns>
+        public bool TryUseAll(ICriticalSection[] resources, int timeoutMilliseconds, CriticalResourceDelegateWithVoidResult function)
+        {
+            TryUseAll(resources, timeoutMilliseconds, out bool wasLockObtained, function);
+            return wasLockObtained;
+        }
+
+        /// <summary>
+        /// Attmepts to acquire the lock. If successful, executes the delegate function.
+        /// </summary>
+        /// <param name="resources">The array of other locks that must be obtained.</param>
         /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
         /// <param name="function">The delegate function to execute if the lock is acquired.</param>
-        public void TryUseAll(PessimisticSemaphore<T>[] resources, out bool wasLockObtained, CriticalResourceDelegateWithVoidResult function)
+        public void TryUseAll(ICriticalSection[] resources, out bool wasLockObtained, CriticalResourceDelegateWithVoidResult function)
         {
             var collection = new CriticalCollection[resources.Length];
 
@@ -157,7 +269,7 @@
                         if (collection[i].IsLockHeld == false)
                         {
                             //We didnt get one of the locks, free the ones we did get and bailout.
-                            foreach (var lockObject in collection.Where(o => o.IsLockHeld))
+                            foreach (var lockObject in collection.Where(o => o != null && o.IsLockHeld))
                             {
                                 lockObject.Resource.Release();
                             }
@@ -169,7 +281,7 @@
 
                     function(_value);
 
-                    foreach (var lockObject in collection.Where(o => o.IsLockHeld))
+                    foreach (var lockObject in collection.Where(o => o != null && o.IsLockHeld))
                     {
                         lockObject.Resource.Release();
                     }
@@ -209,7 +321,7 @@
                         if (collection[i].IsLockHeld == false)
                         {
                             //We didnt get one of the locks, free the ones we did get and bailout.
-                            foreach (var lockObject in collection.Where(o => o.IsLockHeld))
+                            foreach (var lockObject in collection.Where(o => o != null && o.IsLockHeld))
                             {
                                 lockObject.Resource.Release();
                             }
@@ -221,7 +333,7 @@
 
                     function(_value);
 
-                    foreach (var lockObject in collection.Where(o => o.IsLockHeld))
+                    foreach (var lockObject in collection.Where(o => o != null && o.IsLockHeld))
                     {
                         lockObject.Resource.Release();
                     }
@@ -262,7 +374,7 @@
                         if (collection[i].IsLockHeld == false)
                         {
                             //We didnt get one of the locks, free the ones we did get and bailout.
-                            foreach (var lockObject in collection.Where(o => o.IsLockHeld))
+                            foreach (var lockObject in collection.Where(o => o != null && o.IsLockHeld))
                             {
                                 lockObject.Resource.Release();
                             }
@@ -274,7 +386,7 @@
 
                     var result = function(_value);
 
-                    foreach (var lockObject in collection.Where(o => o.IsLockHeld))
+                    foreach (var lockObject in collection.Where(o => o != null && o.IsLockHeld))
                     {
                         lockObject.Resource.Release();
                     }
@@ -318,7 +430,7 @@
                         if (collection[i].IsLockHeld == false)
                         {
                             //We didnt get one of the locks, free the ones we did get and bailout.
-                            foreach (var lockObject in collection.Where(o => o.IsLockHeld))
+                            foreach (var lockObject in collection.Where(o => o != null && o.IsLockHeld))
                             {
                                 lockObject.Resource.Release();
                             }
@@ -330,7 +442,7 @@
 
                     var result = function(_value);
 
-                    foreach (var lockObject in collection.Where(o => o.IsLockHeld))
+                    foreach (var lockObject in collection.Where(o => o != null && o.IsLockHeld))
                     {
                         lockObject.Resource.Release();
                     }
@@ -375,7 +487,7 @@
                         if (collection[i].IsLockHeld == false)
                         {
                             //We didnt get one of the locks, free the ones we did get and bailout.
-                            foreach (var lockObject in collection.Where(o => o.IsLockHeld))
+                            foreach (var lockObject in collection.Where(o => o != null && o.IsLockHeld))
                             {
                                 lockObject.Resource.Release();
                             }
@@ -387,7 +499,7 @@
 
                     var result = function(_value);
 
-                    foreach (var lockObject in collection.Where(o => o.IsLockHeld))
+                    foreach (var lockObject in collection.Where(o => o != null && o.IsLockHeld))
                     {
                         lockObject.Resource.Release();
                     }
@@ -431,7 +543,7 @@
                         if (collection[i].IsLockHeld == false)
                         {
                             //We didnt get one of the locks, free the ones we did get and bailout.
-                            foreach (var lockObject in collection.Where(o => o.IsLockHeld))
+                            foreach (var lockObject in collection.Where(o => o != null && o.IsLockHeld))
                             {
                                 lockObject.Resource.Release();
                             }
@@ -443,7 +555,7 @@
 
                     var result = function(_value);
 
-                    foreach (var lockObject in collection.Where(o => o.IsLockHeld))
+                    foreach (var lockObject in collection.Where(o => o != null && o.IsLockHeld))
                     {
                         lockObject.Resource.Release();
                     }
@@ -531,6 +643,7 @@
 
         /// <summary>
         /// Blocks until the base lock as well as all supplied locks are acquired then executes the delegate function.
+        /// Due to the way that the locks are obtained, UseAll() can lead to lock interleaving which will cause a deadlock if called in parallel with other calls to UseAll(), ReadAll() or WriteAll().
         /// </summary>
         /// <param name="resources">The array of other locks that must be obtained.</param>
         /// <param name="function">The delegate function to execute when the lock is acquired.</param>
@@ -861,93 +974,5 @@
 
             return defaultValue;
         }
-
-        #region Internal interface functionality.
-
-        /// <summary>
-        /// Internal use only. Attempts to acquire the lock for a given number of milliseconds.
-        /// </summary>
-        /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
-        /// <returns></returns>
-        bool ICriticalSection.TryAcquire(int timeoutMilliseconds)
-            => TryAcquire(timeoutMilliseconds);
-
-        /// <summary>
-        /// Internal use only. Attempts to acquire the lock.
-        /// </summary>
-        /// <returns></returns>
-        bool ICriticalSection.TryAcquire()
-            => TryAcquire();
-
-        /// <summary>
-        /// Internal use only. Blocks until the lock is acquired.
-        /// </summary>
-        void ICriticalSection.Acquire()
-            => Acquire();
-
-        /// <summary>
-        /// Internal use only. Releases the previously acquired lock.
-        /// </summary>
-        void ICriticalSection.Release()
-            => Release();
-
-        /// <summary>
-        /// Internal use only. Attempts to acquire the lock for a given number of milliseconds.
-        /// </summary>
-        /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
-        /// <returns></returns>
-        private bool TryAcquire(int timeoutMilliseconds)
-            => _criticalSection.TryAcquire(timeoutMilliseconds);
-
-        /// <summary>
-        /// Internal use only. Attempts to acquire the lock.
-        /// </summary>
-        /// <returns></returns>
-        private bool TryAcquire()
-            => _criticalSection.TryAcquire();
-
-        /// <summary>
-        /// Internal use only. Blocks until the lock is acquired.
-        /// </summary>
-        private void Acquire()
-            => _criticalSection.Acquire();
-
-        /// <summary>
-        /// Internal use only. Releases the previously acquired lock.
-        /// </summary>
-        private void Release()
-            => _criticalSection.Release();
-
-        /// <summary>
-        /// Internal use only. Blocks until the lock is acquired.
-        /// This implemented so that a PessimisticSemaphore can be locked via a call to OptimisticSemaphore...All().
-        /// </summary>
-        void ICriticalSection.Acquire(OptimisticCriticalSection.LockIntention intention)
-            => Acquire();
-
-        /// <summary>
-        /// Internal use only. Attempts to acquire the lock.
-        /// This implemented so that a PessimisticSemaphore can be locked via a call to OptimisticSemaphore...All().
-        /// </summary>
-        /// <returns></returns>
-        bool ICriticalSection.TryAcquire(OptimisticCriticalSection.LockIntention intention)
-            => TryAcquire();
-
-        /// <summary>
-        /// Internal use only. Attempts to acquire the lock.
-        /// This implemented so that a PessimisticSemaphore can be locked via a call to OptimisticSemaphore...All().
-        /// </summary>
-        /// <returns></returns>
-        bool ICriticalSection.TryAcquire(OptimisticCriticalSection.LockIntention intention, int timeoutMilliseconds)
-            => TryAcquire(timeoutMilliseconds);
-
-        /// <summary>
-        /// Internal use only. Releases the previously acquired lock.
-        /// This implemented so that a PessimisticSemaphore can be locked via a call to OptimisticSemaphore...All().
-        /// </summary>
-        void ICriticalSection.Release(OptimisticCriticalSection.LockIntention intention)
-            => Release();
-
-        #endregion
     }
 }

@@ -7,7 +7,7 @@ Provides various classes to protect a variable from parallel / non-sequential th
 
 **PessimisticSemaphore using inline execution example:**
 >An example using a PessimisticSemaphore to envelope a variable and protect it from parallel execution,
-> Note that there are nullable and nonnullable counterpars and also template/generics of each method to
+> Note that there are nullable and nonnullable counterparts and also template/generics of each method to
 > allow you to return various types from the delegate execution.
 ```csharp
 public class Car
@@ -159,6 +159,22 @@ public int Value
         _criticalSection.Use(() => _value = value);
     }
 }
+```
+
+## Thread ownership tracking
+If you need to keep track of which thread owns each semaphore and/or critical sections then
+  you can enable "ThreadOwnershipTracking" by calling ThreadOwnershipTracking.Enable(). Once this
+  is enabled, it is enabled for the life of the application so this is only for debugging
+  deadlock/race-condition tracking.
+You can evaluate the ownership by evaluating
+  the dictonary "ThreadOwnershipTracking.LockRegistration" or and instance of
+  "PessimisticCriticalSection" or "PessimisticSemaphore" CurrentOwnerThread.
+
+**Enabling Thread Ownership Tracking**
+>
+>An example of enabling the thread ownerhsip mechanism.
+```csharp
+ThreadOwnershipTracking.Enable();
 ```
 
 ## License

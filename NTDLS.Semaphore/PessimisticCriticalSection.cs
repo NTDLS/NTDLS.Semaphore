@@ -7,30 +7,11 @@
     {
         /// <summary>
         /// Identifies the current thread that owns the lock. This is only tracked if enabled by a call
-        /// to EnableThreadOwnershipTracking(). Once enabled, the tracking is attributed to all critical
+        /// to ThreadOwnershipTracking.EnableThreadOwnershipTracking(). Once enabled, the tracking is attributed to all critical
         /// sections for the life of the applicaiton - so its definitly best only enabled in debugging.
         /// </summary>
-        public Thread? OwnerThread { get; private set; }
+        public Thread? CurrentOwnerThread { get; private set; }
         private int _reentrantLevel = 0;
-
-        #region Global static configuration.
-
-        private static bool _enableGlobalLockRegistration = false;
-        private static bool _enableThreadOwnershipTracking = false;
-
-        /// <summary>
-        /// Enables a dictonary of all threads that own locks. This can be handy when identifying deadlocks
-        /// and race conditions. Once enabled, the tracking is attributed to all critical sections for the
-        /// life of the applicaiton.  - so its definitly best only enabled in debugging.
-        /// </summary>
-        public static void EnableGlobalLockRegistration() => _enableGlobalLockRegistration = true;
-
-        /// <summary>
-        /// Enables tracking of the current thread that owns the lock. This is only tracked if enabled by a call to EnableThreadOwnershipTracking().
-        /// </summary>
-        public static void EnableThreadOwnershipTracking() => _enableThreadOwnershipTracking = true;
-
-        #endregion
 
         #region Delegates.
 
@@ -52,13 +33,6 @@
         /// <typeparam name="T">The type of the return value.</typeparam>
         /// <returns></returns>
         public delegate T CriticalSectionDelegateWithNotNullableResultT<T>();
-
-        /// <summary>
-        /// A dictonary of all threads that own locks. This can be handy when identifying deadlocks and race conditions.
-        /// This is only tracked if enabled by a call to EnableGlobalLockRegistration().
-        /// Once enabled, the tracking is attributed to all critical sections for the life of the applicaiton.
-        /// </summary>
-        public readonly static Dictionary<string, ICriticalSection> GlobalLocks = new();
 
         #endregion
 
@@ -465,19 +439,16 @@
         {
             if (Monitor.TryEnter(this, timeoutMilliseconds))
             {
-                if (_enableThreadOwnershipTracking)
-                {
-                    OwnerThread = Thread.CurrentThread;
-                }
                 _reentrantLevel++;
 
-                if (_enableGlobalLockRegistration)
+                if (ThreadOwnershipTracking.LockRegistration != null)
                 {
+                    CurrentOwnerThread = Thread.CurrentThread;
                     if (_reentrantLevel == 1)
                     {
-                        lock (GlobalLocks)
+                        lock (ThreadOwnershipTracking.LockRegistration)
                         {
-                            GlobalLocks.Add($"CS:{Thread.CurrentThread.ManagedThreadId}:{GetHashCode()}", this);
+                            ThreadOwnershipTracking.LockRegistration.TryAdd($"Pessimistic:CS:Exclusive:{Environment.CurrentManagedThreadId}:{GetHashCode()}", this);
                         }
                     }
                 }
@@ -495,19 +466,16 @@
         {
             if (Monitor.TryEnter(this))
             {
-                if (_enableThreadOwnershipTracking)
-                {
-                    OwnerThread = Thread.CurrentThread;
-                }
                 _reentrantLevel++;
 
-                if (_enableGlobalLockRegistration)
+                if (ThreadOwnershipTracking.LockRegistration != null)
                 {
+                    CurrentOwnerThread = Thread.CurrentThread;
                     if (_reentrantLevel == 1)
                     {
-                        lock (GlobalLocks)
+                        lock (ThreadOwnershipTracking.LockRegistration)
                         {
-                            GlobalLocks.Add($"CS:{Thread.CurrentThread.ManagedThreadId}:{GetHashCode()}", this);
+                            ThreadOwnershipTracking.LockRegistration.TryAdd($"Pessimistic:CS:Exclusive:{Environment.CurrentManagedThreadId}:{GetHashCode()}", this);
                         }
                     }
                 }
@@ -523,19 +491,16 @@
         private void Acquire()
         {
             Monitor.Enter(this);
-            if (_enableThreadOwnershipTracking)
-            {
-                OwnerThread = Thread.CurrentThread;
-            }
             _reentrantLevel++;
 
-            if (_enableGlobalLockRegistration)
+            if (ThreadOwnershipTracking.LockRegistration != null)
             {
+                CurrentOwnerThread = Thread.CurrentThread;
                 if (_reentrantLevel == 1)
                 {
-                    lock (GlobalLocks)
+                    lock (ThreadOwnershipTracking.LockRegistration)
                     {
-                        GlobalLocks.Add($"CS:{Thread.CurrentThread.ManagedThreadId}:{GetHashCode()}", this);
+                        ThreadOwnershipTracking.LockRegistration.TryAdd($"Pessimistic:CS:Exclusive:{Environment.CurrentManagedThreadId}:{GetHashCode()}", this);
                     }
                 }
             }
@@ -548,23 +513,20 @@
         {
             _reentrantLevel--;
 
-            if (_enableThreadOwnershipTracking && OwnerThread == null)
+            if (ThreadOwnershipTracking.LockRegistration != null && CurrentOwnerThread == null)
             {
                 throw new InvalidOperationException("Cannot release an unowned lock.");
             }
 
             if (_reentrantLevel == 0)
             {
-                if (_enableGlobalLockRegistration)
+                if (ThreadOwnershipTracking.LockRegistration != null)
                 {
-                    lock (GlobalLocks)
+                    lock (ThreadOwnershipTracking.LockRegistration)
                     {
-                        GlobalLocks.Remove($"CS:{Thread.CurrentThread.ManagedThreadId}:{GetHashCode()}");
+                        ThreadOwnershipTracking.LockRegistration.Remove($"Pessimistic:CS:Exclusive:{Environment.CurrentManagedThreadId}:{GetHashCode()}");
+                        CurrentOwnerThread = null;
                     }
-                }
-                if (_enableThreadOwnershipTracking)
-                {
-                    OwnerThread = null;
                 }
             }
             else if (_reentrantLevel < 0)
