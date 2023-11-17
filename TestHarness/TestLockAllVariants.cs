@@ -20,6 +20,29 @@ namespace TestHarness
             Console.WriteLine("[TestLockAllVariants] {");
             DateTime startTime = DateTime.UtcNow;
 
+            // Due to the way that the locks are obtained, ReadAll/WriteAll/UseAll can lead to lock interleaving
+            //  which will cause a deadlock if called in parallel with other calls to UseAll(), ReadAll() or WriteAll().
+            // For these reasons, we will test them here and not in parallel.
+            _optimisticSemaphore.ReadAll(
+                new ICriticalSection[] { _optimisticSemaphore, _pessimisticSemaphore, _optimisticCriticalSection, _pessimisticCriticalSection }, (o) =>
+                {
+                    _totalAllLockCount++;
+                    //Console.WriteLine("[optimisticSemaphore.ReadAll] All locks obtained.");
+                });
+
+            _optimisticSemaphore.WriteAll(
+                new ICriticalSection[] { _optimisticSemaphore, _pessimisticSemaphore, _optimisticCriticalSection, _pessimisticCriticalSection }, (o) =>
+                {
+                    _totalAllLockCount++;
+                    //Console.WriteLine("[optimisticSemaphore.WriteAll] All locks obtained.");
+                });
+            _pessimisticSemaphore.UseAll(
+                new ICriticalSection[] { _optimisticSemaphore, _pessimisticSemaphore, _optimisticCriticalSection, _pessimisticCriticalSection }, (o) =>
+                {
+                    _totalAllLockCount++;
+                    //Console.WriteLine("[pessimisticSemaphore.UseAll] All locks obtained.");
+                });
+
             //Create test threads:
             for (int i = 0; i < _threadsToCreate; i++)
                 _threads.Add(new Thread(ThreadProc));
@@ -64,30 +87,6 @@ namespace TestHarness
                     _totalAllLockCount++;
                     //Console.WriteLine("[pessimisticSemaphore.TryUseAll] All locks obtained.");
                 });
-
-            // Due to the way that the locks are obtained, ReadAll/WriteAll/UseAll can lead to lock interleaving
-            //  which will cause a deadlock if called in parallel with other calls to UseAll(), ReadAll() or WriteAll().
-            /*
-            _optimisticSemaphore.ReadAll(
-                new ICriticalSection[] { _optimisticSemaphore, _pessimisticSemaphore, _optimisticCriticalSection, _pessimisticCriticalSection }, (o) =>
-                {
-                    _totalAllLockCount++;
-                    //Console.WriteLine("[optimisticSemaphore.ReadAll] All locks obtained.");
-                });
-
-            _optimisticSemaphore.WriteAll(
-                new ICriticalSection[] { _optimisticSemaphore, _pessimisticSemaphore, _optimisticCriticalSection, _pessimisticCriticalSection }, (o) =>
-                {
-                    _totalAllLockCount++;
-                    //Console.WriteLine("[optimisticSemaphore.WriteAll] All locks obtained.");
-                });
-            _pessimisticSemaphore.UseAll(
-                new ICriticalSection[] { _optimisticSemaphore, _pessimisticSemaphore, _optimisticCriticalSection, _pessimisticCriticalSection }, (o) =>
-                {
-                    _totalAllLockCount++;
-                    //Console.WriteLine("[pessimisticSemaphore.UseAll] All locks obtained.");
-                });
-            */
         }
     }
 }
