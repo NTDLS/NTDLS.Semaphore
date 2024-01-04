@@ -14,23 +14,23 @@
     <RepositoryUrl>https://github.com/NTDLS/NTDLS.Semaphore</RepositoryUrl>
     <PackageTags>threading;critical-section;semaphore;parallel-execution;sequential-execution</PackageTags>
     <PackageReleaseNotes>
-      Further expanded compatibility of ICriticalSection to allow mixing of optimistic and pessimistic semaphores for LockAll() variants.
-      Enhanced the thread ownership tracking to include a mixture ofoptimistic and pessimistic critical sections.
+      Removed icon.
     </PackageReleaseNotes>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <Authors>NetworkDLS</Authors>
     <Company>NetworkDLS</Company>
-    <AssemblyVersion>3.1.0</AssemblyVersion>
-    <FileVersion>3.1.0</FileVersion>
-    <VersionPrefix>3.1.0</VersionPrefix>
-    <version></version>
+    <AssemblyVersion>3.1.1</AssemblyVersion>
+    <FileVersion>3.1.1</FileVersion>
+    <VersionPrefix>3.1.1</VersionPrefix>
+    <version>3.1.1</version>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <IncludeSymbols>True</IncludeSymbols>
     <PackageIcon>Logo.png</PackageIcon>
     <ApplicationIcon>NTDLS.Semaphore.ico</ApplicationIcon>
   </PropertyGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition=" '$(BuildingPackage)' == 'true' ">
     <Content Include="NTDLS.Semaphore.ico" />
   </ItemGroup>
 
