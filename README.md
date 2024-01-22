@@ -2,11 +2,11 @@
 
 📦 Be sure to check out the NuGet pacakge: https://www.nuget.org/packages/NTDLS.Semaphore
 
-## Pessimistic Semaphore
+## Pessimistic Critical Resource
 Provides various classes to protect a variable from parallel / non-sequential thread access by always acquiring an exclusive lock on the resource.
 
-**PessimisticSemaphore using inline execution example:**
->An example using a PessimisticSemaphore to envelope a variable and protect it from parallel execution,
+**PessimisticCriticalResource using inline execution example:**
+>An example using a PessimisticCriticalResource to envelope a variable and protect it from parallel execution,
 > Note that there are nullable and nonnullable counterparts and also template/generics of each method to
 > allow you to return various types from the delegate execution.
 ```csharp
@@ -16,7 +16,7 @@ public class Car
     public int NumerOhWheels { get; set; }
 }
 
-public PessimisticSemaphore<List<Car>> Cars { get; set; } = new();
+public PessimisticCriticalResource<List<Car>> Cars { get; set; } = new();
 
 public void Add(Car car)
 {
@@ -44,8 +44,8 @@ public bool TryAdd(Car car, int timeout)
 ```
 
 
-**Multi PessimisticSemaphore using inline execution example:**
->An example using a PessimisticSemaphore to envelope a variable and protect it and others from parallel execution.
+**Multi PessimisticCriticalResource using inline execution example:**
+>An example using a PessimisticCriticalResource to envelope a variable and protect it and others from parallel execution.
 ```
 public class Car
 {
@@ -53,10 +53,10 @@ public class Car
     public int NumerOhWheels { get; set; }
 }
 
-public PessimisticSemaphore<List<Car>> Cars { get; set; } = new();
-public CriticalSection OtherLock1 { get; set; } = new();
-public CriticalSection OtherLock2 { get; set; } = new();
-public CriticalSection OtherLock3 { get; set; } = new();
+public PessimisticCriticalResource<List<Car>> Cars { get; set; } = new();
+public PessimisticSemaphore OtherLock1 { get; set; } = new();
+public PessimisticSemaphore OtherLock2 { get; set; } = new();
+public PessimisticSemaphore OtherLock3 { get; set; } = new();
 
 public void Add(Car car)
 {
@@ -93,15 +93,15 @@ public Car? TryGet(string name, int timeout)
 ```
 
 
-## Optimistic Semaphore
+## Optimistic Critical Resource
 Protects a variable from parallel / non-sequential thread access but controls read-only and exclusive
 access separately to prevent read operations from blocking other read operations.it is up to the developer
 to determine when each lock type is appropriate. Note: read-only locks only indicate intention, the resource
 will not disallow modification of the resource, but this will lead to race conditions.
 
-**OptimisticSemaphore using inline execution example:**
+**OptimisticCriticalResource using inline execution example:**
 >
->An example using a CriticalSection to protect a portion of code from parallel execution while not allowing reads to block reads.
+>An example using a OptimisticCriticalResource to protect a portion of code from parallel execution while not allowing reads to block reads.
 ```csharp
 public class Car
 {
@@ -109,7 +109,7 @@ public class Car
     public int NumerOhWheels { get; set; }
 }
 
-public OptimisticSemaphore<List<Car>> Cars { get; set; } = new();
+public OptimisticCriticalResource<List<Car>> Cars { get; set; } = new();
 
 public void Add(Car car)
 {
@@ -140,11 +140,11 @@ public bool TryAdd(Car car, int timeout)
 ## Critical Section
 Protects an area of code from parallel / non-sequential thread access.
 
-**CriticalSection using inline execution example:**
+**PessimisticSemaphore using inline execution example:**
 >
->An example using a CriticalSection to protect a portion of code from parallel execution.
+>An example using a PessimisticSemaphore to protect a portion of code from parallel execution.
 ```csharp
-private CriticalSection _criticalSection = new();
+private PessimisticSemaphore _pessimisticSemaphore = new();
 
 private int _value;
 
@@ -152,11 +152,11 @@ public int Value
 {
     get
     {
-        return _criticalSection.Use(() => _value);
+        return _pessimisticSemaphore.Use(() => _value);
     }
     set
     {
-        _criticalSection.Use(() => _value = value);
+        _pessimisticSemaphore.Use(() => _value = value);
     }
 }
 ```
@@ -168,7 +168,7 @@ If you need to keep track of which thread owns each semaphore and/or critical se
   deadlock/race-condition tracking.
 You can evaluate the ownership by evaluating
   the dictonary "ThreadOwnershipTracking.LockRegistration" or and instance of
-  "PessimisticCriticalSection" or "PessimisticSemaphore" CurrentOwnerThread.
+  "PessimisticSemaphore" or "PessimisticCriticalResource" CurrentOwnerThread.
 
 **Enabling Thread Ownership Tracking**
 >

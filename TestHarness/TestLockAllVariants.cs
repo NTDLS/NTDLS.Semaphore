@@ -4,10 +4,10 @@ namespace TestHarness
 {
     internal class TestLockAllVariants
     {
-        private readonly PessimisticSemaphore<List<string>> _pessimisticSemaphore = new();
-        private readonly OptimisticSemaphore<List<string>> _optimisticSemaphore = new();
-        private readonly OptimisticCriticalSection _optimisticCriticalSection = new();
-        private readonly PessimisticCriticalSection _pessimisticCriticalSection = new();
+        private readonly PessimisticCriticalResource<List<string>> _pessimisticSemaphore = new();
+        private readonly OptimisticCriticalResource<List<string>> _optimisticSemaphore = new();
+        private readonly OptimisticSemaphore _optimisticCriticalSection = new();
+        private readonly PessimisticSemaphore _pessimisticCriticalSection = new();
 
         private readonly List<Thread> _threads = new();
 
@@ -17,7 +17,7 @@ namespace TestHarness
 
         public double Execute()
         {
-            Console.WriteLine("[TestLockAllVariants] {");
+            Console.WriteLine("[LockAllVariants] {");
             DateTime startTime = DateTime.UtcNow;
 
             // Due to the way that the locks are obtained, ReadAll/WriteAll/UseAll can lead to lock interleaving

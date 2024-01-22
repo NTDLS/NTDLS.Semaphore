@@ -14,6 +14,7 @@
             //
             //ThreadOwnershipTracking.Enable();
 
+
             int iterations = 100;
 
             double lockAllVariantsDuration = 0;
@@ -25,10 +26,10 @@
             for (int i = 0; i < 10; i++)
             {
                 lockAllVariantsDuration += (new TestLockAllVariants()).Execute();
-                pessimisticCriticalDuration += (new TestPessimisticCriticalSection()).Execute();
-                optimisticCriticalDuration += (new TestOptimisticCriticalSection()).Execute();
-                pessimisticSemaphoreDuration += (new TestPessimisticSemaphore()).Execute();
-                optimisticSemaphoreDuration += (new TestOptimisticSemaphore()).Execute();
+                pessimisticCriticalDuration += (new TestPessimisticSemaphore()).Execute();
+                optimisticCriticalDuration += (new TestOptimisticSemaphore()).Execute();
+                pessimisticSemaphoreDuration += (new TestPessimisticCriticalResource()).Execute();
+                optimisticSemaphoreDuration += (new TestOptimisticCriticalResource()).Execute();
             }
 
             Console.WriteLine($"Avg Durations after {iterations:n0} iterations:");
