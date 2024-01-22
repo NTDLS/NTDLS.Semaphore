@@ -1,4 +1,4 @@
-﻿using static NTDLS.Semaphore.OptimisticCriticalSection;
+﻿using static NTDLS.Semaphore.OptimisticCriticalResource;
 
 namespace NTDLS.Semaphore
 {
@@ -62,7 +62,7 @@ namespace NTDLS.Semaphore
         /// </summary>
         public OptimisticSemaphore()
         {
-            _criticalSection = new OptimisticCriticalSection();
+            _criticalSection = new OptimisticCriticalResource();
             _value = new T();
         }
 
@@ -72,7 +72,7 @@ namespace NTDLS.Semaphore
         /// <param name="value"></param>
         public OptimisticSemaphore(T value)
         {
-            _criticalSection = new OptimisticCriticalSection();
+            _criticalSection = new OptimisticCriticalResource();
             _value = value;
         }
 

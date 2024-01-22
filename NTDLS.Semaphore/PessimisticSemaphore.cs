@@ -114,7 +114,7 @@
         /// Internal use only. Blocks until the lock is acquired.
         /// This implemented so that a PessimisticSemaphore can be locked via a call to OptimisticSemaphore...All().
         /// </summary>
-        void ICriticalSection.Acquire(OptimisticCriticalSection.LockIntention intention)
+        void ICriticalSection.Acquire(OptimisticCriticalResource.LockIntention intention)
             => Acquire();
 
         /// <summary>
@@ -122,7 +122,7 @@
         /// This implemented so that a PessimisticSemaphore can be locked via a call to OptimisticSemaphore...All().
         /// </summary>
         /// <returns></returns>
-        bool ICriticalSection.TryAcquire(OptimisticCriticalSection.LockIntention intention)
+        bool ICriticalSection.TryAcquire(OptimisticCriticalResource.LockIntention intention)
             => TryAcquire();
 
         /// <summary>
@@ -130,14 +130,14 @@
         /// This implemented so that a PessimisticSemaphore can be locked via a call to OptimisticSemaphore...All().
         /// </summary>
         /// <returns></returns>
-        bool ICriticalSection.TryAcquire(OptimisticCriticalSection.LockIntention intention, int timeoutMilliseconds)
+        bool ICriticalSection.TryAcquire(OptimisticCriticalResource.LockIntention intention, int timeoutMilliseconds)
             => TryAcquire(timeoutMilliseconds);
 
         /// <summary>
         /// Internal use only. Releases the previously acquired lock.
         /// This implemented so that a PessimisticSemaphore can be locked via a call to OptimisticSemaphore...All().
         /// </summary>
-        void ICriticalSection.Release(OptimisticCriticalSection.LockIntention intention)
+        void ICriticalSection.Release(OptimisticCriticalResource.LockIntention intention)
             => Release();
 
         #endregion
@@ -148,7 +148,7 @@
         public PessimisticSemaphore()
         {
             _value = new T();
-            _criticalSection = new PessimisticCriticalSection();
+            _criticalSection = new PessimisticCriticalResource();
         }
 
         /// <summary>
@@ -158,7 +158,7 @@
         public PessimisticSemaphore(T value)
         {
             _value = value;
-            _criticalSection = new PessimisticCriticalSection();
+            _criticalSection = new PessimisticCriticalResource();
         }
 
         /// <summary>

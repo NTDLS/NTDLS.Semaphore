@@ -4,7 +4,7 @@
     /// The optimistic critical section that is at the core of the optimistic semaphore.
     /// Can be instantiated externally and chared across optimistic semaphores
     /// </summary>
-    public class OptimisticCriticalSection : ICriticalSection
+    public class OptimisticCriticalResource : ICriticalSection
     {
         private readonly PessimisticSemaphore<List<HeldLock>> _locks = new();
         private readonly AutoResetEvent _locksModifiedEvent = new(false);
