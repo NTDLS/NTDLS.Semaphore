@@ -6,8 +6,8 @@ namespace TestHarness
     {
         private readonly PessimisticSemaphore<List<string>> _pessimisticSemaphore = new();
         private readonly OptimisticSemaphore<List<string>> _optimisticSemaphore = new();
-        private readonly OptimisticCriticalResource _optimisticCriticalSection = new();
-        private readonly PessimisticCriticalResource _pessimisticCriticalSection = new();
+        private readonly OptimisticCriticalSection _optimisticCriticalSection = new();
+        private readonly PessimisticCriticalSection _pessimisticCriticalSection = new();
 
         private readonly List<Thread> _threads = new();
 

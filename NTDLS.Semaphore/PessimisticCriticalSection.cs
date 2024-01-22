@@ -3,7 +3,7 @@
     /// <summary>
     /// Protects an area of code from parallel / non-sequential thread access.
     /// </summary>
-    public class PessimisticCriticalResource : ICriticalSection
+    public class PessimisticCriticalSection : ICriticalSection
     {
         /// <summary>
         /// Identifies the current thread that owns the lock. This is only tracked if enabled by a call
@@ -377,7 +377,7 @@
         /// Internal use only. Blocks until the lock is acquired.
         /// This implemented so that a PessimisticSemaphore can be locked via a call to OptimisticSemaphore...All().
         /// </summary>
-        void ICriticalSection.Acquire(OptimisticCriticalResource.LockIntention intention)
+        void ICriticalSection.Acquire(OptimisticCriticalSection.LockIntention intention)
             => Acquire();
 
         /// <summary>
@@ -385,7 +385,7 @@
         /// This implemented so that a PessimisticSemaphore can be locked via a call to OptimisticSemaphore...All().
         /// </summary>
         /// <returns></returns>
-        bool ICriticalSection.TryAcquire(OptimisticCriticalResource.LockIntention intention)
+        bool ICriticalSection.TryAcquire(OptimisticCriticalSection.LockIntention intention)
             => TryAcquire();
 
         /// <summary>
@@ -393,14 +393,14 @@
         /// This implemented so that a PessimisticSemaphore can be locked via a call to OptimisticSemaphore...All().
         /// </summary>
         /// <returns></returns>
-        bool ICriticalSection.TryAcquire(OptimisticCriticalResource.LockIntention intention, int timeoutMilliseconds)
+        bool ICriticalSection.TryAcquire(OptimisticCriticalSection.LockIntention intention, int timeoutMilliseconds)
             => TryAcquire(timeoutMilliseconds);
 
         /// <summary>
         /// Internal use only. Releases the previously acquired lock.
         /// This implemented so that a PessimisticSemaphore can be locked via a call to OptimisticSemaphore...All().
         /// </summary>
-        void ICriticalSection.Release(OptimisticCriticalResource.LockIntention intention)
+        void ICriticalSection.Release(OptimisticCriticalSection.LockIntention intention)
             => Release();
 
         /// <summary>

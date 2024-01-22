@@ -2,9 +2,9 @@
 
 namespace TestHarness
 {
-    internal class TestOptimisticCriticalResource
+    internal class TestOptimisticCriticalSection
     {
-        private readonly OptimisticCriticalResource _genericCS = new();
+        private readonly OptimisticCriticalSection _genericCS = new();
         private readonly List<Thread> _threads = new();
         private readonly List<string> _listOfObjects = new();
 

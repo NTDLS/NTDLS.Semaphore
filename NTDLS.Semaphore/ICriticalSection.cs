@@ -1,4 +1,4 @@
-﻿using static NTDLS.Semaphore.OptimisticCriticalResource;
+﻿using static NTDLS.Semaphore.OptimisticCriticalSection;
 
 namespace NTDLS.Semaphore
 {

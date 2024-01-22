@@ -25,8 +25,8 @@
             for (int i = 0; i < 10; i++)
             {
                 lockAllVariantsDuration += (new TestLockAllVariants()).Execute();
-                pessimisticCriticalDuration += (new TestPessimisticCriticalResource()).Execute();
-                optimisticCriticalDuration += (new TestOptimisticCriticalResource()).Execute();
+                pessimisticCriticalDuration += (new TestPessimisticCriticalSection()).Execute();
+                optimisticCriticalDuration += (new TestOptimisticCriticalSection()).Execute();
                 pessimisticSemaphoreDuration += (new TestPessimisticSemaphore()).Execute();
                 optimisticSemaphoreDuration += (new TestOptimisticSemaphore()).Execute();
             }
