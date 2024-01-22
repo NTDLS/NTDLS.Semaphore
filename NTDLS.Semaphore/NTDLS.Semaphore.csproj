@@ -14,7 +14,7 @@
     <RepositoryUrl>https://github.com/NTDLS/NTDLS.Semaphore</RepositoryUrl>
     <PackageTags>threading;critical-section;semaphore;parallel-execution;sequential-execution</PackageTags>
     <PackageReleaseNotes>
-      Removed icon.
+      Renamed various classes.
     </PackageReleaseNotes>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
