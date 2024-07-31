@@ -7,8 +7,9 @@
     {
         /// <summary>
         /// Identifies the current thread that owns the lock. This is only tracked if enabled by a call
-        /// to ThreadOwnershipTracking.EnableThreadOwnershipTracking(). Once enabled, the tracking is attributed to all critical
-        /// sections for the life of the applicaiton - so its definitly best only enabled in debugging.
+        /// to ThreadOwnershipTracking.EnableThreadOwnershipTracking(). Once enabled, the tracking is
+        /// attributed to all critical sections for the life of the application - so its definitely best
+        /// only enabled in debugging.
         /// </summary>
         public Thread? CurrentOwnerThread { get; private set; }
         private int _reentrantLevel = 0;

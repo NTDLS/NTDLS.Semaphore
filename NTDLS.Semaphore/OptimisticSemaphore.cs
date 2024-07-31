@@ -2,7 +2,7 @@
 {
     /// <summary>
     /// The optimistic critical section that is at the core of the optimistic semaphore.
-    /// Can be instantiated externally and chared across optimistic semaphores
+    /// Can be instantiated externally and shared across optimistic semaphores
     /// </summary>
     public class OptimisticSemaphore : ICriticalSection
     {
@@ -218,11 +218,11 @@
                     //This thread needs to acquire a new exclusive lock.
                     if (intention == LockIntention.Exclusive)
                     {
-                        //Check to see if there are any existig locks (other than the ones held by the current thread).
+                        //Check to see if there are any existing locks (other than the ones held by the current thread).
                         //Read locks held by this thread DO NOT block new exclusive locks by the same thread.
                         if (o.Where(l => l.ThreadId != threadId).Any() == false)
                         {
-                            //This thread is seeking a exclusive lock and there are no incompativle read-only locks. Grant the exclusive-lock.
+                            //This thread is seeking an exclusive lock and there are no incompatible read-only locks. Grant the exclusive-lock.
                             o.Add(new HeldLock(threadId, intention));
                             RegisterLock(intention);
                             _locksModifiedEvent.Set(); //Let any waiting lock acquisitions know they can try again.
@@ -276,7 +276,7 @@
 
                 if (heldLock.ReferenceCount == 0)
                 {
-                    //We have derefrenced all of this threads locks of the intended type. Remove the lock from the collection.
+                    //We have dereferenced all of this threads locks of the intended type. Remove the lock from the collection.
                     o.Remove(heldLock);
                     DeregisterLock(intention);
                     _locksModifiedEvent.Set(); //Let any waiting lock acquisitions know they can try again.

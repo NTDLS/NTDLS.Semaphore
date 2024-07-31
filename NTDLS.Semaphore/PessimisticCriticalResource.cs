@@ -31,6 +31,12 @@
         #region Delegates.
 
         /// <summary>
+        /// Used by the constructor to allow for advanced initialization of the enclosed value.
+        /// </summary>
+        /// <returns></returns>
+        public delegate T InitializationCallback();
+
+        /// <summary>
         /// Delegate for executions that do not require a return value.
         /// </summary>
         /// <param name="obj">The variable that is being protected. It can be safely modified here.</param>
@@ -145,6 +151,25 @@
         /// <summary>
         /// Initializes a new pessimistic semaphore that envelopes a variable.
         /// </summary>
+        public PessimisticCriticalResource(InitializationCallback initializationCallback)
+        {
+            _value = initializationCallback();
+            _criticalSection = new PessimisticSemaphore();
+        }
+
+        /// <summary>
+        /// Envelopes a variable with a set value, using a predefined critical section. This allows you to protect a variable that has a non-empty constructor.
+        /// If other pessimistic semaphores use the same critical section, they will require the exclusive lock of the shared critical section.
+        /// </summary>
+        public PessimisticCriticalResource(InitializationCallback initializationCallback, ICriticalSection criticalSection)
+        {
+            _value = initializationCallback();
+            _criticalSection = criticalSection;
+        }
+
+        /// <summary>
+        /// Initializes a new pessimistic semaphore that envelopes a variable.
+        /// </summary>
         public PessimisticCriticalResource()
         {
             _value = new T();
@@ -165,7 +190,6 @@
         /// Envelopes a variable using a predefined critical section.
         /// If other pessimistic semaphores use the same critical section, they will require the exclusive lock of the shared critical section.
         /// </summary>
-        /// <param name="criticalSection"></param>
         public PessimisticCriticalResource(ICriticalSection criticalSection)
         {
             _value = new T();
@@ -176,8 +200,6 @@
         /// Envelopes a variable with a set value, using a predefined critical section. This allows you to protect a variable that has a non-empty constructor.
         /// If other pessimistic semaphores use the same critical section, they will require the exclusive lock of the shared critical section.
         /// </summary>
-        /// <param name="value"></param>
-        /// <param name="criticalSection"></param>
         public PessimisticCriticalResource(T value, ICriticalSection criticalSection)
         {
             _value = value;
@@ -223,7 +245,7 @@
         }
 
         /// <summary>
-        /// Attmepts to acquire the lock. If successful, executes the delegate function.
+        /// Attempts to acquire the lock. If successful, executes the delegate function.
         /// </summary>
         /// <param name="resources">The array of other locks that must be obtained.</param>
         /// <param name="function">The delegate function to execute if the lock is acquired.</param>
@@ -235,7 +257,7 @@
         }
 
         /// <summary>
-        /// Attmepts to acquire the lock. If successful, executes the delegate function.
+        /// Attempts to acquire the lock. If successful, executes the delegate function.
         /// </summary>
         /// <param name="resources">The array of other locks that must be obtained.</param>
         /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
@@ -248,7 +270,7 @@
         }
 
         /// <summary>
-        /// Attmepts to acquire the lock. If successful, executes the delegate function.
+        /// Attempts to acquire the lock. If successful, executes the delegate function.
         /// </summary>
         /// <param name="resources">The array of other locks that must be obtained.</param>
         /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
@@ -268,7 +290,7 @@
 
                         if (collection[i].IsLockHeld == false)
                         {
-                            //We didnt get one of the locks, free the ones we did get and bailout.
+                            //We didn't get one of the locks, free the ones we did get and bailout.
                             foreach (var lockObject in collection.Where(o => o != null && o.IsLockHeld))
                             {
                                 lockObject.Resource.Release();
@@ -299,7 +321,7 @@
         }
 
         /// <summary>
-        /// Attmepts to acquire the lock for the specified number of milliseconds. If successful, executes the delegate function.
+        /// Attempts to acquire the lock for the specified number of milliseconds. If successful, executes the delegate function.
         /// </summary>
         /// <param name="resources">The array of other locks that must be obtained.</param>
         /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
@@ -320,7 +342,7 @@
 
                         if (collection[i].IsLockHeld == false)
                         {
-                            //We didnt get one of the locks, free the ones we did get and bailout.
+                            //We didn't get one of the locks, free the ones we did get and bailout.
                             foreach (var lockObject in collection.Where(o => o != null && o.IsLockHeld))
                             {
                                 lockObject.Resource.Release();
@@ -351,7 +373,7 @@
         }
 
         /// <summary>
-        /// Attmepts to acquire the lock. If successful, executes the delegate function and returns the nullable value from the delegate function.
+        /// Attempts to acquire the lock. If successful, executes the delegate function and returns the nullable value from the delegate function.
         /// </summary>
         /// <typeparam name="R"></typeparam>
         /// <param name="resources">The array of other locks that must be obtained.</param>
@@ -373,7 +395,7 @@
 
                         if (collection[i].IsLockHeld == false)
                         {
-                            //We didnt get one of the locks, free the ones we did get and bailout.
+                            //We didn't get one of the locks, free the ones we did get and bailout.
                             foreach (var lockObject in collection.Where(o => o != null && o.IsLockHeld))
                             {
                                 lockObject.Resource.Release();
@@ -405,7 +427,7 @@
         }
 
         /// <summary>
-        /// Attmepts to acquire the lock. If successful, executes the delegate function and returns the non-nullable value from the delegate function.
+        /// Attempts to acquire the lock. If successful, executes the delegate function and returns the non-nullable value from the delegate function.
         /// Otherwise returns the given default value.
         /// </summary>
         /// <typeparam name="R"></typeparam>
@@ -429,7 +451,7 @@
 
                         if (collection[i].IsLockHeld == false)
                         {
-                            //We didnt get one of the locks, free the ones we did get and bailout.
+                            //We didn't get one of the locks, free the ones we did get and bailout.
                             foreach (var lockObject in collection.Where(o => o != null && o.IsLockHeld))
                             {
                                 lockObject.Resource.Release();
@@ -461,7 +483,7 @@
         }
 
         /// <summary>
-        /// Attmepts to acquire the lock for the given number of milliseconds. If successful, executes the delegate function and
+        /// Attempts to acquire the lock for the given number of milliseconds. If successful, executes the delegate function and
         /// returns the non-nullable value from the delegate function. Otherwise returns the given default value.
         /// </summary>
         /// <typeparam name="R"></typeparam>
@@ -486,7 +508,7 @@
 
                         if (collection[i].IsLockHeld == false)
                         {
-                            //We didnt get one of the locks, free the ones we did get and bailout.
+                            //We didn't get one of the locks, free the ones we did get and bailout.
                             foreach (var lockObject in collection.Where(o => o != null && o.IsLockHeld))
                             {
                                 lockObject.Resource.Release();
@@ -518,7 +540,7 @@
         }
 
         /// <summary>
-        /// Attmepts to acquire the lock for the given number of milliseconds. If successful, executes the delegate function and
+        /// Attempts to acquire the lock for the given number of milliseconds. If successful, executes the delegate function and
         /// returns the nullable value from the delegate function. Otherwise returns null.
         /// </summary>
         /// <typeparam name="R"></typeparam>
@@ -542,7 +564,7 @@
 
                         if (collection[i].IsLockHeld == false)
                         {
-                            //We didnt get one of the locks, free the ones we did get and bailout.
+                            //We didn't get one of the locks, free the ones we did get and bailout.
                             foreach (var lockObject in collection.Where(o => o != null && o.IsLockHeld))
                             {
                                 lockObject.Resource.Release();
@@ -574,7 +596,7 @@
         }
 
         /// <summary>
-        /// Attmepts to acquire the lock base lock as well as all supplied locks. If successful, executes the delegate function and
+        /// Attempts to acquire the lock base lock as well as all supplied locks. If successful, executes the delegate function and
         /// returns the nullable value from the delegate function. Otherwise returns null.
         /// </summary>
         /// <typeparam name="R"></typeparam>

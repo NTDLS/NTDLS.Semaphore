@@ -1,13 +1,13 @@
 # NTDLS.Semaphore
 
-📦 Be sure to check out the NuGet pacakge: https://www.nuget.org/packages/NTDLS.Semaphore
+📦 Be sure to check out the NuGet package: https://www.nuget.org/packages/NTDLS.Semaphore
 
 ## Pessimistic Critical Resource
 Provides various classes to protect a variable from parallel / non-sequential thread access by always acquiring an exclusive lock on the resource.
 
 **PessimisticCriticalResource using inline execution example:**
 >An example using a PessimisticCriticalResource to envelope a variable and protect it from parallel execution,
-> Note that there are nullable and nonnullable counterparts and also template/generics of each method to
+> Note that there are nullable and non-nullable counterparts and also template/generics of each method to
 > allow you to return various types from the delegate execution.
 ```csharp
 public class Car

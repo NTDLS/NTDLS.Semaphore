@@ -4,12 +4,12 @@
     {
         static void Main()
         {
-            //If you need to keep track of which thread ownes each semephore and/or critical sections then
+            //If you need to keep track of which thread owns each semaphore and/or critical sections then
             //  you can enable "ThreadOwnershipTracking" by calling ThreadOwnershipTracking.Enable(). Once this
             //  is enabled, it is enabled for the life of the application so this is only for debugging
             //  deadlock/race-condition tracking.
             //You can evaluate the ownership by evaluating
-            //  the dictonary "ThreadOwnershipTracking.LockRegistration" or and instance of
+            //  the dictionary "ThreadOwnershipTracking.LockRegistration" or and instance of
             //  "PessimisticCriticalSection" or "PessimisticSemaphore" CurrentOwnerThread.
             //
             //ThreadOwnershipTracking.Enable();

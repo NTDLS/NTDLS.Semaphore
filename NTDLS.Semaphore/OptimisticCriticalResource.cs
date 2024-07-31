@@ -32,6 +32,12 @@ namespace NTDLS.Semaphore
         #region Delegates.
 
         /// <summary>
+        /// Used by the constructor to allow for advanced initialization of the enclosed value.
+        /// </summary>
+        /// <returns></returns>
+        public delegate T InitializationCallback();
+
+        /// <summary>
         /// Delegate for executions that do not require a return value.
         /// </summary>
         /// <param name="obj">The variable that is being protected.</param>
@@ -60,6 +66,25 @@ namespace NTDLS.Semaphore
         /// <summary>
         /// Initializes a new optimistic semaphore that envelopes a variable.
         /// </summary>
+        public OptimisticCriticalResource(InitializationCallback initializationCallback)
+        {
+            _criticalSection = new OptimisticSemaphore();
+            _value = initializationCallback();
+        }
+
+        /// <summary>
+        /// Envelopes a variable with a set value, using a predefined critical section. This allows you to protect a variable that has a non-empty constructor.
+        /// If other optimistic semaphores use the same critical section, they will require the lock of the shared critical section.
+        /// </summary>
+        public OptimisticCriticalResource(InitializationCallback initializationCallback, ICriticalSection criticalSection)
+        {
+            _value = initializationCallback();
+            _criticalSection = criticalSection;
+        }
+
+        /// <summary>
+        /// Initializes a new optimistic semaphore that envelopes a variable.
+        /// </summary>
         public OptimisticCriticalResource()
         {
             _criticalSection = new OptimisticSemaphore();
@@ -80,20 +105,16 @@ namespace NTDLS.Semaphore
         /// Envelopes a variable using a predefined critical section.
         /// If other optimistic semaphores use the same critical section, they will require the lock of the shared critical section.
         /// </summary>
-        /// <param name="criticalSection"></param>
         public OptimisticCriticalResource(ICriticalSection criticalSection)
         {
             _criticalSection = criticalSection;
             _value = new T();
-            _criticalSection = criticalSection;
         }
 
         /// <summary>
         /// Envelopes a variable with a set value, using a predefined critical section. This allows you to protect a variable that has a non-empty constructor.
         /// If other optimistic semaphores use the same critical section, they will require the lock of the shared critical section.
         /// </summary>
-        /// <param name="value"></param>
-        /// <param name="criticalSection"></param>
         public OptimisticCriticalResource(T value, ICriticalSection criticalSection)
         {
             _value = value;
@@ -805,7 +826,7 @@ namespace NTDLS.Semaphore
         #region Use All (Write)
 
         /// <summary>
-        /// Attmepts to acquire the lock. If successful, executes the delegate function.
+        /// Attempts to acquire the lock. If successful, executes the delegate function.
         /// The delegate SHOULD NOT modify the passed value, otherwise corruption can occur. For modifications, call Write() or TryWrite() instead.
         /// </summary>
         /// <param name="resources">The array of other locks that must be obtained.</param>
@@ -818,7 +839,7 @@ namespace NTDLS.Semaphore
         }
 
         /// <summary>
-        /// Attmepts to acquire the lock. If successful, executes the delegate function.
+        /// Attempts to acquire the lock. If successful, executes the delegate function.
         /// The delegate SHOULD NOT modify the passed value, otherwise corruption can occur. For modifications, call Write() or TryWrite() instead.
         /// </summary>
         /// <param name="resources">The array of other locks that must be obtained.</param>
@@ -832,7 +853,7 @@ namespace NTDLS.Semaphore
         }
 
         /// <summary>
-        /// Attmepts to acquire the lock. If successful, executes the delegate function.
+        /// Attempts to acquire the lock. If successful, executes the delegate function.
         /// </summary>
         /// <param name="resources">The array of other locks that must be obtained.</param>
         /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
@@ -852,7 +873,7 @@ namespace NTDLS.Semaphore
 
                         if (collection[i].IsLockHeld == false)
                         {
-                            //We didnt get one of the locks, free the ones we did get and bailout.
+                            //We didn't get one of the locks, free the ones we did get and bailout.
                             foreach (var lockObject in collection.Where(o => o != null && o.IsLockHeld))
                             {
                                 lockObject.Resource.Release(LockIntention.Exclusive);
@@ -883,7 +904,7 @@ namespace NTDLS.Semaphore
         }
 
         /// <summary>
-        /// Attmepts to acquire the lock for the specified number of milliseconds. If successful, executes the delegate function.
+        /// Attempts to acquire the lock for the specified number of milliseconds. If successful, executes the delegate function.
         /// </summary>
         /// <param name="resources">The array of other locks that must be obtained.</param>
         /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
@@ -904,7 +925,7 @@ namespace NTDLS.Semaphore
 
                         if (collection[i].IsLockHeld == false)
                         {
-                            //We didnt get one of the locks, free the ones we did get and bailout.
+                            //We didn't get one of the locks, free the ones we did get and bailout.
                             foreach (var lockObject in collection.Where(o => o != null && o.IsLockHeld))
                             {
                                 lockObject.Resource.Release(LockIntention.Exclusive);
@@ -935,7 +956,7 @@ namespace NTDLS.Semaphore
         }
 
         /// <summary>
-        /// Attmepts to acquire the lock. If successful, executes the delegate function and returns the nullable value from the delegate function.
+        /// Attempts to acquire the lock. If successful, executes the delegate function and returns the nullable value from the delegate function.
         /// </summary>
         /// <typeparam name="R"></typeparam>
         /// <param name="resources">The array of other locks that must be obtained.</param>
@@ -957,7 +978,7 @@ namespace NTDLS.Semaphore
 
                         if (collection[i].IsLockHeld == false)
                         {
-                            //We didnt get one of the locks, free the ones we did get and bailout.
+                            //We didn't get one of the locks, free the ones we did get and bailout.
                             foreach (var lockObject in collection.Where(o => o != null && o.IsLockHeld))
                             {
                                 lockObject.Resource.Release(LockIntention.Exclusive);
@@ -989,7 +1010,7 @@ namespace NTDLS.Semaphore
         }
 
         /// <summary>
-        /// Attmepts to acquire the lock. If successful, executes the delegate function and returns the non-nullable value from the delegate function.
+        /// Attempts to acquire the lock. If successful, executes the delegate function and returns the non-nullable value from the delegate function.
         /// Otherwise returns the given default value.
         /// </summary>
         /// <typeparam name="R"></typeparam>
@@ -1013,7 +1034,7 @@ namespace NTDLS.Semaphore
 
                         if (collection[i].IsLockHeld == false)
                         {
-                            //We didnt get one of the locks, free the ones we did get and bailout.
+                            //We didn't get one of the locks, free the ones we did get and bailout.
                             foreach (var lockObject in collection.Where(o => o != null && o.IsLockHeld))
                             {
                                 lockObject.Resource.Release(LockIntention.Exclusive);
@@ -1045,7 +1066,7 @@ namespace NTDLS.Semaphore
         }
 
         /// <summary>
-        /// Attmepts to acquire the lock for the given number of milliseconds. If successful, executes the delegate function and
+        /// Attempts to acquire the lock for the given number of milliseconds. If successful, executes the delegate function and
         /// returns the non-nullable value from the delegate function. Otherwise returns the given default value.
         /// </summary>
         /// <typeparam name="R"></typeparam>
@@ -1070,7 +1091,7 @@ namespace NTDLS.Semaphore
 
                         if (collection[i].IsLockHeld == false)
                         {
-                            //We didnt get one of the locks, free the ones we did get and bailout.
+                            //We didn't get one of the locks, free the ones we did get and bailout.
                             foreach (var lockObject in collection.Where(o => o != null && o.IsLockHeld))
                             {
                                 lockObject.Resource.Release(LockIntention.Exclusive);
@@ -1102,7 +1123,7 @@ namespace NTDLS.Semaphore
         }
 
         /// <summary>
-        /// Attmepts to acquire the lock for the given number of milliseconds. If successful, executes the delegate function and
+        /// Attempts to acquire the lock for the given number of milliseconds. If successful, executes the delegate function and
         /// returns the nullable value from the delegate function. Otherwise returns null.
         /// </summary>
         /// <typeparam name="R"></typeparam>
@@ -1126,7 +1147,7 @@ namespace NTDLS.Semaphore
 
                         if (collection[i].IsLockHeld == false)
                         {
-                            //We didnt get one of the locks, free the ones we did get and bailout.
+                            //We didn't get one of the locks, free the ones we did get and bailout.
                             foreach (var lockObject in collection.Where(o => o != null && o.IsLockHeld))
                             {
                                 lockObject.Resource.Release(LockIntention.Exclusive);
@@ -1158,7 +1179,7 @@ namespace NTDLS.Semaphore
         }
 
         /// <summary>
-        /// Attmepts to acquire the lock base lock as well as all supplied locks. If successful, executes the delegate function and
+        /// Attempts to acquire the lock base lock as well as all supplied locks. If successful, executes the delegate function and
         /// returns the nullable value from the delegate function. Otherwise returns null.
         /// </summary>
         /// <typeparam name="R"></typeparam>
@@ -1261,7 +1282,7 @@ namespace NTDLS.Semaphore
         #region Use All (Read)
 
         /// <summary>
-        /// Attmepts to acquire the lock. If successful, executes the delegate function.
+        /// Attempts to acquire the lock. If successful, executes the delegate function.
         /// The delegate SHOULD NOT modify the passed value, otherwise corruption can occur. For modifications, call Write() or TryWrite() instead.
         /// </summary>
         /// <param name="resources">The array of other locks that must be obtained.</param>
@@ -1274,7 +1295,7 @@ namespace NTDLS.Semaphore
         }
 
         /// <summary>
-        /// Attmepts to acquire the lock. If successful, executes the delegate function.
+        /// Attempts to acquire the lock. If successful, executes the delegate function.
         /// The delegate SHOULD NOT modify the passed value, otherwise corruption can occur. For modifications, call Write() or TryWrite() instead.
         /// </summary>
         /// <param name="resources">The array of other locks that must be obtained.</param>
@@ -1288,7 +1309,7 @@ namespace NTDLS.Semaphore
         }
 
         /// <summary>
-        /// Attmepts to acquire the lock. If successful, executes the delegate function.
+        /// Attempts to acquire the lock. If successful, executes the delegate function.
         /// The delegate SHOULD NOT modify the passed value, otherwise corruption can occur. For modifications, call Write() or TryWrite() instead.
         /// </summary>
         /// <param name="resources">The array of other locks that must be obtained.</param>
@@ -1309,7 +1330,7 @@ namespace NTDLS.Semaphore
 
                         if (collection[i].IsLockHeld == false)
                         {
-                            //We didnt get one of the locks, free the ones we did get and bailout.
+                            //We didn't get one of the locks, free the ones we did get and bailout.
                             foreach (var lockObject in collection.Where(o => o != null && o.IsLockHeld))
                             {
                                 lockObject.Resource.Release(LockIntention.Readonly);
@@ -1340,7 +1361,7 @@ namespace NTDLS.Semaphore
         }
 
         /// <summary>
-        /// Attmepts to acquire the lock for the specified number of milliseconds. If successful, executes the delegate function.
+        /// Attempts to acquire the lock for the specified number of milliseconds. If successful, executes the delegate function.
         /// The delegate SHOULD NOT modify the passed value, otherwise corruption can occur. For modifications, call Write() or TryWrite() instead.
         /// </summary>
         /// <param name="resources">The array of other locks that must be obtained.</param>
@@ -1362,7 +1383,7 @@ namespace NTDLS.Semaphore
 
                         if (collection[i].IsLockHeld == false)
                         {
-                            //We didnt get one of the locks, free the ones we did get and bailout.
+                            //We didn't get one of the locks, free the ones we did get and bailout.
                             foreach (var lockObject in collection.Where(o => o != null && o.IsLockHeld))
                             {
                                 lockObject.Resource.Release(LockIntention.Readonly);
@@ -1393,7 +1414,7 @@ namespace NTDLS.Semaphore
         }
 
         /// <summary>
-        /// Attmepts to acquire the lock. If successful, executes the delegate function and returns the nullable value from the delegate function.
+        /// Attempts to acquire the lock. If successful, executes the delegate function and returns the nullable value from the delegate function.
         /// The delegate SHOULD NOT modify the passed value, otherwise corruption can occur. For modifications, call Write() or TryWrite() instead.
         /// </summary>
         /// <typeparam name="R"></typeparam>
@@ -1416,7 +1437,7 @@ namespace NTDLS.Semaphore
 
                         if (collection[i].IsLockHeld == false)
                         {
-                            //We didnt get one of the locks, free the ones we did get and bailout.
+                            //We didn't get one of the locks, free the ones we did get and bailout.
                             foreach (var lockObject in collection.Where(o => o != null && o.IsLockHeld))
                             {
                                 lockObject.Resource.Release(LockIntention.Readonly);
@@ -1448,7 +1469,7 @@ namespace NTDLS.Semaphore
         }
 
         /// <summary>
-        /// Attmepts to acquire the lock. If successful, executes the delegate function and returns the non-nullable value from the delegate function,
+        /// Attempts to acquire the lock. If successful, executes the delegate function and returns the non-nullable value from the delegate function,
         /// otherwise returns the given default value.
         /// The delegate SHOULD NOT modify the passed value, otherwise corruption can occur. For modifications, call Write() or TryWrite() instead.
         /// </summary>
@@ -1473,7 +1494,7 @@ namespace NTDLS.Semaphore
 
                         if (collection[i].IsLockHeld == false)
                         {
-                            //We didnt get one of the locks, free the ones we did get and bailout.
+                            //We didn't get one of the locks, free the ones we did get and bailout.
                             foreach (var lockObject in collection.Where(o => o != null && o.IsLockHeld))
                             {
                                 lockObject.Resource.Release(LockIntention.Readonly);
@@ -1505,7 +1526,7 @@ namespace NTDLS.Semaphore
         }
 
         /// <summary>
-        /// Attmepts to acquire the lock for the given number of milliseconds. If successful, executes the delegate function and
+        /// Attempts to acquire the lock for the given number of milliseconds. If successful, executes the delegate function and
         /// The delegate SHOULD NOT modify the passed value, otherwise corruption can occur. For modifications, call Write() or TryWrite() instead.
         /// </summary>
         /// <typeparam name="R"></typeparam>
@@ -1530,7 +1551,7 @@ namespace NTDLS.Semaphore
 
                         if (collection[i].IsLockHeld == false)
                         {
-                            //We didnt get one of the locks, free the ones we did get and bailout.
+                            //We didn't get one of the locks, free the ones we did get and bailout.
                             foreach (var lockObject in collection.Where(o => o != null && o.IsLockHeld))
                             {
                                 lockObject.Resource.Release(LockIntention.Readonly);
@@ -1562,7 +1583,7 @@ namespace NTDLS.Semaphore
         }
 
         /// <summary>
-        /// Attmepts to acquire the lock for the given number of milliseconds. If successful, executes the delegate function and
+        /// Attempts to acquire the lock for the given number of milliseconds. If successful, executes the delegate function and
         /// The delegate SHOULD NOT modify the passed value, otherwise corruption can occur. For modifications, call Write() or TryWrite() instead.
         /// </summary>
         /// <typeparam name="R"></typeparam>
@@ -1586,7 +1607,7 @@ namespace NTDLS.Semaphore
 
                         if (collection[i].IsLockHeld == false)
                         {
-                            //We didnt get one of the locks, free the ones we did get and bailout.
+                            //We didn't get one of the locks, free the ones we did get and bailout.
                             foreach (var lockObject in collection.Where(o => o != null && o.IsLockHeld))
                             {
                                 lockObject.Resource.Release(LockIntention.Readonly);
@@ -1618,7 +1639,7 @@ namespace NTDLS.Semaphore
         }
 
         /// <summary>
-        /// Attmepts to acquire the lock base lock as well as all supplied locks. If successful, executes the delegate function and
+        /// Attempts to acquire the lock base lock as well as all supplied locks. If successful, executes the delegate function and
         /// The delegate SHOULD NOT modify the passed value, otherwise corruption can occur. For modifications, call Write() or TryWrite() instead.
         /// </summary>
         /// <typeparam name="R"></typeparam>

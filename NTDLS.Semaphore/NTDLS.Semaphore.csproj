@@ -8,19 +8,20 @@
     <Title>NTDLS.Semaphore</Title>
     <Copyright>Copyright © 2024 NetworkDLS</Copyright>
     <Description>
-      Provides various classes to ensure sequential access to variables or sections of code in mult-threaded code.
+      Provides various classes to ensure sequential access to variables or sections of code in multi-threaded environments.
     </Description>
     <PackageProjectUrl>https://github.com/NTDLS/NTDLS.Semaphore</PackageProjectUrl>
     <RepositoryUrl>https://github.com/NTDLS/NTDLS.Semaphore</RepositoryUrl>
     <PackageTags>threading;critical-section;semaphore;parallel-execution;sequential-execution</PackageTags>
     <PackageReleaseNotes>
-      Renamed various classes.
+      Added advanced initialization delegates to Critical Resource constructors.
+      Typoes and spell check. :/
     </PackageReleaseNotes>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Authors>NetworkDLS</Authors>
     <Company>NetworkDLS</Company>
-    <version>3.3.1</version>
+    <version>3.3.2</version>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <IncludeSymbols>True</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
