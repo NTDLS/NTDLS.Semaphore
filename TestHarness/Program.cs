@@ -17,27 +17,27 @@
 
             int iterations = 100;
 
-            double lockAllVariantsDuration = 0;
-            double pessimisticCriticalDuration = 0;
-            double optimisticCriticalDuration = 0;
-            double pessimisticSemaphoreDuration = 0;
-            double optimisticSemaphoreDuration = 0;
+            double testLockAllVariants = 0;
+            double testPessimisticSemaphore = 0;
+            double testOptimisticSemaphore = 0;
+            double testPessimisticCriticalResource = 0;
+            double testOptimisticCriticalResource = 0;
 
             for (int i = 0; i < 10; i++)
             {
-                lockAllVariantsDuration += (new TestLockAllVariants()).Execute();
-                pessimisticCriticalDuration += (new TestPessimisticSemaphore()).Execute();
-                optimisticCriticalDuration += (new TestOptimisticSemaphore()).Execute();
-                pessimisticSemaphoreDuration += (new TestPessimisticCriticalResource()).Execute();
-                optimisticSemaphoreDuration += (new TestOptimisticCriticalResource()).Execute();
+                testLockAllVariants += (new TestLockAllVariants()).Execute();
+                testPessimisticSemaphore += (new TestPessimisticSemaphore()).Execute();
+                testOptimisticSemaphore += (new TestOptimisticSemaphore()).Execute();
+                testPessimisticCriticalResource += (new TestPessimisticCriticalResource()).Execute();
+                testOptimisticCriticalResource += (new TestOptimisticCriticalResource()).Execute();
             }
 
             Console.WriteLine($"Avg Durations after {iterations:n0} iterations:");
-            Console.WriteLine($"           Lock All Variants: {(lockAllVariantsDuration / iterations):n2}ms");
-            Console.WriteLine($"Pessimistic Critical Section: {(pessimisticCriticalDuration / iterations):n2}ms");
-            Console.WriteLine($" Optimistic Critical Section: {(optimisticCriticalDuration / iterations):n2}ms");
-            Console.WriteLine($"       Pessimistic Semaphore: {(pessimisticSemaphoreDuration / iterations):n2}ms");
-            Console.WriteLine($"        Optimistic Semaphore: {(optimisticSemaphoreDuration / iterations):n2}ms");
+            Console.WriteLine($"               LockAllVariants: {(testLockAllVariants / iterations):n2}ms");
+            Console.WriteLine($"          PessimisticSemaphore: {(testPessimisticSemaphore / iterations):n2}ms");
+            Console.WriteLine($"           OptimisticSemaphore: {(testOptimisticSemaphore / iterations):n2}ms");
+            Console.WriteLine($"   PessimisticCriticalResource: {(testPessimisticCriticalResource / iterations):n2}ms");
+            Console.WriteLine($"    OptimisticCriticalResource: {(testOptimisticCriticalResource / iterations):n2}ms");
         }
     }
 }

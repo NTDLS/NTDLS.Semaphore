@@ -1,7 +1,9 @@
-﻿namespace NTDLS.Semaphore
+﻿using System.Runtime.CompilerServices;
+
+namespace NTDLS.Semaphore
 {
     /// <summary>
-    /// The optimistic critical section that is at the core of the optimistic semaphore.
+    /// The optimistic semaphore is at the core of the optimistic critical resource.
     /// Can be instantiated externally and shared across optimistic semaphores
     /// </summary>
     public class OptimisticSemaphore : ICriticalSection
@@ -20,14 +22,12 @@
         /// Delegate for executions that require a nullable return value.
         /// </summary>
         /// <typeparam name="R">The type of the return value.</typeparam>
-        /// <returns></returns>
         public delegate R? CriticalResourceDelegateWithNullableResultT<R>();
 
         /// <summary>
         /// Delegate for executions that require a non-nullable return value.
         /// </summary>
         /// <typeparam name="R">The type of the return value.</typeparam>
-        /// <returns></returns>
         public delegate R CriticalResourceDelegateWithNotNullableResultT<R>();
 
         #endregion
@@ -93,6 +93,7 @@
         /// Acquires an exclusive lock.
         /// This implemented so that a PessimisticSemaphore can be locked via a call to OptimisticSemaphore...All().
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void ICriticalSection.Acquire()
             => Acquire(LockIntention.Exclusive);
 
@@ -100,6 +101,7 @@
         /// Releases an exclusive lock.
         /// This implemented so that a PessimisticSemaphore can be locked via a call to OptimisticSemaphore...All().
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void ICriticalSection.Release()
             => Release(LockIntention.Exclusive);
 
@@ -107,6 +109,7 @@
         /// Acquires an exclusive lock.
         /// This implemented so that a PessimisticSemaphore can be locked via a call to OptimisticSemaphore...All().
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         bool ICriticalSection.TryAcquire()
             => TryAcquire(LockIntention.Exclusive);
 
@@ -114,6 +117,7 @@
         /// Releases an exclusive lock.
         /// This implemented so that a PessimisticSemaphore can be locked via a call to OptimisticSemaphore...All().
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         bool ICriticalSection.TryAcquire(int timeoutMilliseconds)
             => TryAcquire(LockIntention.Exclusive, timeoutMilliseconds);
 
@@ -121,6 +125,7 @@
         /// Acquires a lock with and returns when it is held.
         /// </summary>
         /// <param name="intention"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void ICriticalSection.Acquire(LockIntention intention)
             => Acquire(intention);
 
@@ -128,7 +133,7 @@
         /// Tries to acquire a lock one single time and then gives up.
         /// </summary>
         /// <param name="intention"></param>
-        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         bool ICriticalSection.TryAcquire(LockIntention intention)
             => TryAcquire(intention);
 
@@ -137,7 +142,7 @@
         /// </summary>
         /// <param name="intention"></param>
         /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
-        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         bool ICriticalSection.TryAcquire(LockIntention intention, int timeoutMilliseconds)
             => TryAcquire(intention, timeoutMilliseconds);
 
@@ -146,6 +151,7 @@
         /// </summary>
         /// <param name="intention"></param>
         /// <exception cref="Exception"></exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void ICriticalSection.Release(LockIntention intention)
             => Release(intention);
 
@@ -153,6 +159,7 @@
         /// Acquires a lock with and returns when it is held.
         /// </summary>
         /// <param name="intention"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void Acquire(LockIntention intention)
             => TryAcquire(intention, -1);
 
@@ -160,7 +167,7 @@
         /// Tries to acquire a lock one single time and then gives up.
         /// </summary>
         /// <param name="intention"></param>
-        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool TryAcquire(LockIntention intention)
             => TryAcquire(intention, 0);
 
@@ -169,7 +176,7 @@
         /// </summary>
         /// <param name="intention"></param>
         /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
-        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool TryAcquire(LockIntention intention, int timeoutMilliseconds)
         {
             int threadId = Environment.CurrentManagedThreadId;
@@ -180,7 +187,7 @@
             {
                 bool isLockHeld = _locks.Use((o) =>
                 {
-                    var locksHeldByThisThread = o.Where(l => l.ThreadId == threadId).ToList();
+                    var locksHeldByThisThread = o.Where(l => l.ThreadId == threadId);
 
                     //Check to see if this thread already has a lock of the requested type.
                     var existingExactLockByThisThread = locksHeldByThisThread.SingleOrDefault(l => l.LockType == intention);
@@ -200,7 +207,6 @@
                             //The current thread already has an exclusive lock, so we automatically grant a read-lock.
                             o.Add(new HeldLock(threadId, intention));
                             RegisterLock(intention);
-                            _locksModifiedEvent.Set(); //Let any waiting lock acquisitions know they can try again.
                             return true;
                         }
 
@@ -210,7 +216,6 @@
                             //This thread is seeking a read-only lock and there are no exclusive locks. Grant the read-lock.
                             o.Add(new HeldLock(threadId, intention));
                             RegisterLock(intention);
-                            _locksModifiedEvent.Set(); //Let any waiting lock acquisitions know they can try again.
                             return true;
                         }
                     }
@@ -220,12 +225,11 @@
                     {
                         //Check to see if there are any existing locks (other than the ones held by the current thread).
                         //Read locks held by this thread DO NOT block new exclusive locks by the same thread.
-                        if (o.Where(l => l.ThreadId != threadId).Any() == false)
+                        if (o.Any(l => l.ThreadId != threadId) == false)
                         {
                             //This thread is seeking an exclusive lock and there are no incompatible read-only locks. Grant the exclusive-lock.
                             o.Add(new HeldLock(threadId, intention));
                             RegisterLock(intention);
-                            _locksModifiedEvent.Set(); //Let any waiting lock acquisitions know they can try again.
                             return true;
                         }
                     }
@@ -236,6 +240,7 @@
                 if (isLockHeld)
                 {
                     //If we were able to acquire a lock, return true.
+                    _locksModifiedEvent.Set(); //Let any waiting lock acquisitions know they can try again.
                     return true;
                 }
 
@@ -259,13 +264,14 @@
         /// </summary>
         /// <param name="intention"></param>
         /// <exception cref="Exception"></exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void Release(LockIntention intention)
         {
             int threadId = Environment.CurrentManagedThreadId;
 
             _locks.Use((o) =>
             {
-                var heldLock = o.Where(l => l.ThreadId == threadId && l.LockType == intention).SingleOrDefault();
+                var heldLock = o.SingleOrDefault(l => l.ThreadId == threadId && l.LockType == intention);
 
                 if (heldLock == null)
                 {
@@ -279,13 +285,14 @@
                     //We have dereferenced all of this threads locks of the intended type. Remove the lock from the collection.
                     o.Remove(heldLock);
                     DeregisterLock(intention);
-                    _locksModifiedEvent.Set(); //Let any waiting lock acquisitions know they can try again.
                 }
                 else if (heldLock.ReferenceCount < 0)
                 {
                     throw new Exception("The thread lock reference count fell below zero.");
                 }
             });
+
+            _locksModifiedEvent.Set(); //Let any waiting lock acquisitions know they can try again.
         }
 
         #endregion

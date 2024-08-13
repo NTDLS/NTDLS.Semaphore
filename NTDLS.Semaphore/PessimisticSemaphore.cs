@@ -25,14 +25,12 @@
         /// Delegate for executions that require a nullable return value.
         /// </summary>
         /// <typeparam name="T">The type of the return value.</typeparam>
-        /// <returns></returns>
         public delegate T? CriticalSectionDelegateWithNullableResultT<T>();
 
         /// <summary>
         /// Delegate for executions that require a non-nullable return value.
         /// </summary>
         /// <typeparam name="T">The type of the return value.</typeparam>
-        /// <returns></returns>
         public delegate T CriticalSectionDelegateWithNotNullableResultT<T>();
 
         #endregion
@@ -45,7 +43,6 @@
         /// <typeparam name="T"></typeparam>
         /// <param name="defaultValue">The value to obtain if the lock could not be acquired.</param>
         /// <param name="function">The delegate function to execute if the lock is acquired.</param>
-        /// <returns></returns>
         public T TryUse<T>(T defaultValue, CriticalSectionDelegateWithNotNullableResultT<T> function)
         {
             if (TryAcquire())
@@ -69,7 +66,6 @@
         /// <param name="timeout"></param>
         /// <param name="defaultValue">The value to obtain if the lock could not be acquired.</param>
         /// <param name="function">The delegate function to execute if the lock is acquired.</param>
-        /// <returns></returns>
         public T TryUse<T>(int timeout, T defaultValue, CriticalSectionDelegateWithNotNullableResultT<T> function)
         {
             if (TryAcquire(timeout))
@@ -94,7 +90,6 @@
         /// <param name="defaultValue">The value to obtain if the lock could not be acquired.</param>
         /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
         /// <param name="function">The delegate function to execute if the lock is acquired.</param>
-        /// <returns></returns>
         public T TryUse<T>(T defaultValue, out bool wasLockObtained, CriticalSectionDelegateWithNotNullableResultT<T> function)
         {
             wasLockObtained = TryAcquire();
@@ -120,7 +115,6 @@
         /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
         /// <param name="timeout"></param>
         /// <param name="function">The delegate function to execute if the lock is acquired.</param>
-        /// <returns></returns>
         public T TryUse<T>(T defaultValue, out bool wasLockObtained, int timeout, CriticalSectionDelegateWithNotNullableResultT<T> function)
         {
             wasLockObtained = TryAcquire(timeout);
@@ -143,7 +137,6 @@
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="function">The delegate function to execute if the lock is acquired.</param>
-        /// <returns></returns>
         public T? TryUseNullable<T>(CriticalSectionDelegateWithNullableResultT<T> function)
         {
             if (TryAcquire())
@@ -166,7 +159,6 @@
         /// <typeparam name="T"></typeparam>
         /// <param name="timeout"></param>
         /// <param name="function">The delegate function to execute if the lock is acquired.</param>
-        /// <returns></returns>
         public T? TryUseNullable<T>(int timeout, CriticalSectionDelegateWithNullableResultT<T> function)
         {
             if (TryAcquire(timeout))
@@ -190,7 +182,6 @@
         /// <typeparam name="T"></typeparam>
         /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
         /// <param name="function">The delegate function to execute if the lock is acquired.</param>
-        /// <returns></returns>
         public T? TryUseNullable<T>(out bool wasLockObtained, CriticalSectionDelegateWithNullableResultT<T> function)
         {
             wasLockObtained = TryAcquire();
@@ -215,7 +206,6 @@
         /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
         /// <param name="timeout"></param>
         /// <param name="function">The delegate function to execute if the lock is acquired.</param>
-        /// <returns></returns>
         public T? TryUseNullable<T>(out bool wasLockObtained, int timeout, CriticalSectionDelegateWithNullableResultT<T> function)
         {
             wasLockObtained = TryAcquire(timeout);
@@ -337,7 +327,6 @@
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="function">The delegate function to execute when the lock is acquired.</param>
-        /// <returns></returns>
         public T Use<T>(CriticalSectionDelegateWithNotNullableResultT<T> function)
         {
             Acquire();
@@ -356,7 +345,6 @@
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="function">The delegate function to execute when the lock is acquired.</param>
-        /// <returns></returns>
         public T? UseNullable<T>(CriticalSectionDelegateWithNullableResultT<T> function)
         {
             Acquire();
@@ -385,7 +373,6 @@
         /// Internal use only. Attempts to acquire the lock.
         /// This implemented so that a PessimisticSemaphore can be locked via a call to OptimisticSemaphore...All().
         /// </summary>
-        /// <returns></returns>
         bool ICriticalSection.TryAcquire(OptimisticSemaphore.LockIntention intention)
             => TryAcquire();
 
@@ -393,7 +380,6 @@
         /// Internal use only. Attempts to acquire the lock.
         /// This implemented so that a PessimisticSemaphore can be locked via a call to OptimisticSemaphore...All().
         /// </summary>
-        /// <returns></returns>
         bool ICriticalSection.TryAcquire(OptimisticSemaphore.LockIntention intention, int timeoutMilliseconds)
             => TryAcquire(timeoutMilliseconds);
 
@@ -408,14 +394,12 @@
         /// Internal use only. Attempts to acquire the lock for a given number of milliseconds.
         /// </summary>
         /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
-        /// <returns></returns>
         bool ICriticalSection.TryAcquire(int timeoutMilliseconds)
             => TryAcquire(timeoutMilliseconds);
 
         /// <summary>
         /// Internal use only. Attempts to acquire the lock.
         /// </summary>
-        /// <returns></returns>
         bool ICriticalSection.TryAcquire()
             => TryAcquire();
 
@@ -435,7 +419,6 @@
         /// Internal use only. Attempts to acquire the lock for a given number of milliseconds.
         /// </summary>
         /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
-        /// <returns></returns>
         private bool TryAcquire(int timeoutMilliseconds)
         {
             if (Monitor.TryEnter(this, timeoutMilliseconds))
@@ -462,7 +445,6 @@
         /// <summary>
         /// Internal use only. Attempts to acquire the lock.
         /// </summary>
-        /// <returns></returns>
         private bool TryAcquire()
         {
             if (Monitor.TryEnter(this))
