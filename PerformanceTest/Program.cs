@@ -25,7 +25,7 @@ namespace PerformanceTest
         /// <summary>
         /// The number of hashes to add to the list before starting the threads.
         /// </summary>
-        const int INITIAL_HASH_COUNT = 1000000;
+        const int INITIAL_HASH_COUNT = 10000;
 
         private static ulong _countOfMatches = 0; //This is just to keep the compiler from optimizing our loop too much.
         private static readonly List<Thread> _threads = new();
