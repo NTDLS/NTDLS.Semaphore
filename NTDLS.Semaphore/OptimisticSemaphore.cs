@@ -8,8 +8,7 @@ namespace NTDLS.Semaphore
     /// </summary>
     public class OptimisticSemaphore : ICriticalSection
     {
-        private readonly PessimisticCriticalResource<List<HeldLock>> _locks = new();
-        private readonly AutoResetEvent _locksModifiedEvent = new(false);
+        private readonly ReaderWriterLockSlim _readerWriterLockSlim = new(LockRecursionPolicy.SupportsRecursion);
 
         #region Delegates.
 
@@ -49,43 +48,7 @@ namespace NTDLS.Semaphore
             Readonly
         }
 
-        private class HeldLock
-        {
-            public int ThreadId { get; set; }
-            public int ReferenceCount { get; set; }
-            public LockIntention LockType { get; set; }
-
-            public HeldLock(int threadId, LockIntention lockType)
-            {
-                ThreadId = threadId;
-                LockType = lockType;
-                ReferenceCount++;
-            }
-        }
-
         #endregion
-
-        private void RegisterLock(LockIntention intention)
-        {
-            if (ThreadOwnershipTracking.LockRegistration != null)
-            {
-                lock (ThreadOwnershipTracking.LockRegistration)
-                {
-                    ThreadOwnershipTracking.LockRegistration.TryAdd($"Optimistic:CS:{intention}:{Environment.CurrentManagedThreadId}:{GetHashCode()}", this);
-                }
-            }
-        }
-
-        private void DeregisterLock(LockIntention intention)
-        {
-            if (ThreadOwnershipTracking.LockRegistration != null)
-            {
-                lock (ThreadOwnershipTracking.LockRegistration)
-                {
-                    ThreadOwnershipTracking.LockRegistration.Remove($"Optimistic:CS:{intention}:{Environment.CurrentManagedThreadId}:{GetHashCode()}");
-                }
-            }
-        }
 
         #region Internal lock controls.
 
@@ -179,84 +142,12 @@ namespace NTDLS.Semaphore
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool TryAcquire(LockIntention intention, int timeoutMilliseconds)
         {
-            int threadId = Environment.CurrentManagedThreadId;
+            if (intention == LockIntention.Readonly)
+                return _readerWriterLockSlim.TryEnterReadLock(timeoutMilliseconds);
+            else if (intention == LockIntention.Exclusive)
+                return _readerWriterLockSlim.TryEnterWriteLock(timeoutMilliseconds);
 
-            DateTime? beginAttemptTime = timeoutMilliseconds > 0 ? DateTime.UtcNow : null;
-
-            do
-            {
-                bool isLockHeld = _locks.Use((o) =>
-                {
-                    var locksHeldByThisThread = o.Where(l => l.ThreadId == threadId);
-
-                    //Check to see if this thread already has a lock of the requested type.
-                    var existingExactLockByThisThread = locksHeldByThisThread.SingleOrDefault(l => l.LockType == intention);
-                    if (existingExactLockByThisThread != null)
-                    {
-                        //The thread already has the specified lock type, increment the reference count and return.
-                        existingExactLockByThisThread.ReferenceCount++;
-                        return true;
-                    }
-
-                    //This thread needs to acquire a new read-only lock.
-                    if (intention == LockIntention.Readonly)
-                    {
-                        //Check to see if this thread already holds a more restrictive lock.
-                        if (locksHeldByThisThread.Any(l => l.LockType == LockIntention.Exclusive))
-                        {
-                            //The current thread already has an exclusive lock, so we automatically grant a read-lock.
-                            o.Add(new HeldLock(threadId, intention));
-                            RegisterLock(intention);
-                            return true;
-                        }
-
-                        //Check to make sure there are no existing exclusive locks.
-                        if (o.Any(l => l.LockType == LockIntention.Exclusive) == false)
-                        {
-                            //This thread is seeking a read-only lock and there are no exclusive locks. Grant the read-lock.
-                            o.Add(new HeldLock(threadId, intention));
-                            RegisterLock(intention);
-                            return true;
-                        }
-                    }
-
-                    //This thread needs to acquire a new exclusive lock.
-                    if (intention == LockIntention.Exclusive)
-                    {
-                        //Check to see if there are any existing locks (other than the ones held by the current thread).
-                        //Read locks held by this thread DO NOT block new exclusive locks by the same thread.
-                        if (o.Any(l => l.ThreadId != threadId) == false)
-                        {
-                            //This thread is seeking an exclusive lock and there are no incompatible read-only locks. Grant the exclusive-lock.
-                            o.Add(new HeldLock(threadId, intention));
-                            RegisterLock(intention);
-                            return true;
-                        }
-                    }
-
-                    return false; //We were unable to get a non-conflicting lock.
-                });
-
-                if (isLockHeld)
-                {
-                    //If we were able to acquire a lock, return true.
-                    _locksModifiedEvent.Set(); //Let any waiting lock acquisitions know they can try again.
-                    return true;
-                }
-
-                _locksModifiedEvent.WaitOne(1);
-
-                if (timeoutMilliseconds == 0)
-                {
-                    //timeoutMilliseconds == 0 means try only once.
-                    break;
-                }
-
-            }
-            while (beginAttemptTime == null || (DateTime.UtcNow - (DateTime)beginAttemptTime).TotalMilliseconds < timeoutMilliseconds);
-
-            //Return false because we timed out while attempting to acquire the lock.
-            return false;
+            throw new Exception("The lock intention type is not implemented");
         }
 
         /// <summary>
@@ -267,32 +158,10 @@ namespace NTDLS.Semaphore
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void Release(LockIntention intention)
         {
-            int threadId = Environment.CurrentManagedThreadId;
-
-            _locks.Use((o) =>
-            {
-                var heldLock = o.SingleOrDefault(l => l.ThreadId == threadId && l.LockType == intention);
-
-                if (heldLock == null)
-                {
-                    throw new Exception("The thread lock reference was not found in the collection.");
-                }
-
-                heldLock.ReferenceCount--;
-
-                if (heldLock.ReferenceCount == 0)
-                {
-                    //We have dereferenced all of this threads locks of the intended type. Remove the lock from the collection.
-                    o.Remove(heldLock);
-                    DeregisterLock(intention);
-                }
-                else if (heldLock.ReferenceCount < 0)
-                {
-                    throw new Exception("The thread lock reference count fell below zero.");
-                }
-            });
-
-            _locksModifiedEvent.Set(); //Let any waiting lock acquisitions know they can try again.
+            if (intention == LockIntention.Readonly)
+                _readerWriterLockSlim.ExitReadLock();
+            else if (intention == LockIntention.Exclusive)
+                _readerWriterLockSlim.ExitWriteLock();
         }
 
         #endregion
@@ -810,7 +679,7 @@ namespace NTDLS.Semaphore
                 {
                     return function();
                 }
-                return default(R);
+                return default;
             }
             finally
             {
@@ -837,7 +706,7 @@ namespace NTDLS.Semaphore
                 {
                     return function();
                 }
-                return default(R);
+                return default;
             }
             finally
             {
@@ -862,7 +731,7 @@ namespace NTDLS.Semaphore
                 {
                     return function();
                 }
-                return default(R);
+                return default;
             }
             finally
             {
@@ -887,7 +756,7 @@ namespace NTDLS.Semaphore
                 {
                     return function();
                 }
-                return default(R);
+                return default;
             }
             finally
             {
@@ -914,7 +783,7 @@ namespace NTDLS.Semaphore
                 {
                     return function();
                 }
-                return default(R);
+                return default;
             }
             finally
             {
@@ -941,7 +810,7 @@ namespace NTDLS.Semaphore
                 {
                     return function();
                 }
-                return default(R);
+                return default;
             }
             finally
             {
@@ -967,7 +836,7 @@ namespace NTDLS.Semaphore
                 {
                     return function();
                 }
-                return default(R);
+                return default;
             }
             finally
             {
@@ -993,7 +862,7 @@ namespace NTDLS.Semaphore
                 {
                     return function();
                 }
-                return default(R);
+                return default;
             }
             finally
             {

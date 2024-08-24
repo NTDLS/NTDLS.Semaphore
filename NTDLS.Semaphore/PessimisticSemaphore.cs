@@ -424,18 +424,6 @@
             if (Monitor.TryEnter(this, timeoutMilliseconds))
             {
                 _reentrantLevel++;
-
-                if (ThreadOwnershipTracking.LockRegistration != null)
-                {
-                    CurrentOwnerThread = Thread.CurrentThread;
-                    if (_reentrantLevel == 1)
-                    {
-                        lock (ThreadOwnershipTracking.LockRegistration)
-                        {
-                            ThreadOwnershipTracking.LockRegistration.TryAdd($"Pessimistic:CS:Exclusive:{Environment.CurrentManagedThreadId}:{GetHashCode()}", this);
-                        }
-                    }
-                }
                 return true;
             }
             return false;
@@ -450,19 +438,6 @@
             if (Monitor.TryEnter(this))
             {
                 _reentrantLevel++;
-
-                if (ThreadOwnershipTracking.LockRegistration != null)
-                {
-                    CurrentOwnerThread = Thread.CurrentThread;
-                    if (_reentrantLevel == 1)
-                    {
-                        lock (ThreadOwnershipTracking.LockRegistration)
-                        {
-                            ThreadOwnershipTracking.LockRegistration.TryAdd($"Pessimistic:CS:Exclusive:{Environment.CurrentManagedThreadId}:{GetHashCode()}", this);
-                        }
-                    }
-                }
-
                 return true;
             }
             return false;
@@ -475,18 +450,6 @@
         {
             Monitor.Enter(this);
             _reentrantLevel++;
-
-            if (ThreadOwnershipTracking.LockRegistration != null)
-            {
-                CurrentOwnerThread = Thread.CurrentThread;
-                if (_reentrantLevel == 1)
-                {
-                    lock (ThreadOwnershipTracking.LockRegistration)
-                    {
-                        ThreadOwnershipTracking.LockRegistration.TryAdd($"Pessimistic:CS:Exclusive:{Environment.CurrentManagedThreadId}:{GetHashCode()}", this);
-                    }
-                }
-            }
         }
 
         /// <summary>
@@ -496,23 +459,7 @@
         {
             _reentrantLevel--;
 
-            if (ThreadOwnershipTracking.LockRegistration != null && CurrentOwnerThread == null)
-            {
-                throw new InvalidOperationException("Cannot release an unowned lock.");
-            }
-
-            if (_reentrantLevel == 0)
-            {
-                if (ThreadOwnershipTracking.LockRegistration != null)
-                {
-                    lock (ThreadOwnershipTracking.LockRegistration)
-                    {
-                        ThreadOwnershipTracking.LockRegistration.Remove($"Pessimistic:CS:Exclusive:{Environment.CurrentManagedThreadId}:{GetHashCode()}");
-                        CurrentOwnerThread = null;
-                    }
-                }
-            }
-            else if (_reentrantLevel < 0)
+            if (_reentrantLevel < 0)
             {
                 throw new InvalidOperationException("Cannot release an unowned reentrant lock.");
             }

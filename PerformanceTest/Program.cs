@@ -4,28 +4,28 @@ namespace PerformanceTest
 {
     internal class Program
     {
-        const int READ_THREAD_COUNT = 25;
-        const int WRITE_THREAD_COUNT = 0;
+        const int READ_THREAD_COUNT = 100;
+        const int WRITE_THREAD_COUNT = 15;
 
         /// <summary>
         /// The length of the hashes that will be written to the list.
         /// </summary>
-        const int HASH_SIZE = 6;
+        const int HASH_SIZE = 8;
 
         /// <summary>
         /// The length of the hash that will be used to perform a "StartsWith" match on the hashes for read operations.
         /// </summary>
-        const int PARTIAL_HASH_SIZE = 5;
+        const int PARTIAL_HASH_SIZE = 7;
 
         /// <summary>
         /// The maximum number of duplicates based on the StartsWith partial hash hit, once this count is reached, we remove all matches.
         /// </summary>
-        const int MAX_DUPLICATES = 5;
+        const int MAX_DUPLICATES = 10;
 
         /// <summary>
         /// The number of hashes to add to the list before starting the threads.
         /// </summary>
-        const int INITIAL_HASH_COUNT = 100000;
+        const int INITIAL_HASH_COUNT = 1000000;
 
         private static ulong _countOfMatches = 0; //This is just to keep the compiler from optimizing our loop too much.
         private static readonly List<Thread> _threads = new();
@@ -74,7 +74,6 @@ namespace PerformanceTest
                 int countOfMatches = _hashes.Read(o =>
                 {
                     var partialHash = fullHash[..PARTIAL_HASH_SIZE];
-
                     return o.Count(h => h.StartsWith(partialHash));
                 });
 
