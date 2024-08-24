@@ -466,6 +466,7 @@ namespace NTDLS.Semaphore
         /// <typeparam name="R"></typeparam>
         /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
         /// <param name="function">The delegate function to execute if the lock is acquired.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public R? TryRead<R>(out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R> function)
         {
             wasLockObtained = false;
@@ -820,6 +821,368 @@ namespace NTDLS.Semaphore
                 if (wasLockObtained)
                 {
                     _criticalSection.Release(LockIntention.Exclusive);
+                }
+            }
+
+            return defaultValue;
+        }
+
+        #endregion
+
+        #region UpgradableRead/TryUpgradableRead overloads.
+
+        /// <summary>
+        /// Block until the lock is acquired then executes the delegate function and returns the non-nullable value from the delegate function.
+        /// The delegate SHOULD NOT modify the passed value, otherwise corruption can occur. For modifications, call Write() or TryWrite() instead.
+        /// </summary>
+        /// <typeparam name="R"></typeparam>
+        /// <param name="function">The delegate function to execute when the lock is acquired.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public R UpgradableRead<R>(CriticalResourceDelegateWithNotNullableResultT<R> function)
+        {
+            try
+            {
+                _criticalSection.Acquire(LockIntention.UpgradableRead);
+                return function(_value);
+            }
+            finally
+            {
+                _criticalSection.Release(LockIntention.UpgradableRead);
+            }
+        }
+
+        /// <summary>
+        /// Block until the lock is acquired then executes the delegate function and return the nullable value from the delegate function.
+        /// The delegate SHOULD NOT modify the passed value, otherwise corruption can occur. For modifications, call Write() or TryWrite() instead.
+        /// </summary>
+        /// <typeparam name="R"></typeparam>
+        /// <param name="function">The delegate function to execute when the lock is acquired.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public R? ReadUpgradableNullable<R>(CriticalResourceDelegateWithNullableResultT<R> function)
+        {
+            try
+            {
+                _criticalSection.Acquire(LockIntention.UpgradableRead);
+                return function(_value);
+            }
+            finally
+            {
+                _criticalSection.Release(LockIntention.UpgradableRead);
+            }
+        }
+
+        /// <summary>
+        /// Blocks until the lock is acquired then executes the delegate function.
+        /// The delegate SHOULD NOT modify the passed value, otherwise corruption can occur. For modifications, call Write() or TryWrite() instead.
+        /// </summary>
+        /// <param name="function">The delegate function to execute when the lock is acquired.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void UpgradableRead(CriticalResourceDelegateWithVoidResult function)
+        {
+            try
+            {
+                _criticalSection.Acquire(LockIntention.UpgradableRead);
+                function(_value);
+            }
+            finally
+            {
+                _criticalSection.Release(LockIntention.UpgradableRead);
+            }
+        }
+
+        /// <summary>
+        /// Attempts to acquire the read-only write upgradable lock, if successful then executes the delegate function.
+        /// The delegate SHOULD NOT modify the passed value, otherwise corruption can occur. For modifications, call Write() or TryWrite() instead.
+        /// </summary>
+        /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
+        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void TryUpgradableRead(out bool wasLockObtained, CriticalResourceDelegateWithVoidResult function)
+        {
+            wasLockObtained = false;
+            try
+            {
+                wasLockObtained = _criticalSection.TryAcquire(LockIntention.UpgradableRead);
+                if (wasLockObtained)
+                {
+                    function(_value);
+                    return;
+                }
+            }
+            finally
+            {
+                if (wasLockObtained)
+                {
+                    _criticalSection.Release(LockIntention.UpgradableRead);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Attempts to acquire the read-only write upgradable lock, if successful then executes the delegate function.
+        /// The delegate SHOULD NOT modify the passed value, otherwise corruption can occur. For modifications, call Write() or TryWrite() instead.
+        /// </summary>
+        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void TryUpgradableRead(CriticalResourceDelegateWithVoidResult function)
+        {
+            bool wasLockObtained = false;
+            try
+            {
+                wasLockObtained = _criticalSection.TryAcquire(LockIntention.UpgradableRead);
+                if (wasLockObtained)
+                {
+                    function(_value);
+                    return;
+                }
+            }
+            finally
+            {
+                if (wasLockObtained)
+                {
+                    _criticalSection.Release(LockIntention.UpgradableRead);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Attempts to acquire the read-only write upgradable lock for the given number of milliseconds, if successful then executes the delegate function.
+        /// The delegate SHOULD NOT modify the passed value, otherwise corruption can occur. For modifications, call Write() or TryWrite() instead.
+        /// </summary>
+        /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
+        /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
+        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void TryUpgradableRead(out bool wasLockObtained, int timeoutMilliseconds, CriticalResourceDelegateWithVoidResult function)
+        {
+            wasLockObtained = false;
+            try
+            {
+                wasLockObtained = _criticalSection.TryAcquire(LockIntention.UpgradableRead, timeoutMilliseconds);
+                if (wasLockObtained)
+                {
+                    function(_value);
+                    return;
+                }
+            }
+            finally
+            {
+                if (wasLockObtained)
+                {
+                    _criticalSection.Release(LockIntention.UpgradableRead);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Attempts to acquire the read-only write upgradable lock for the given number of milliseconds, if successful then executes the delegate function.
+        /// The delegate SHOULD NOT modify the passed value, otherwise corruption can occur. For modifications, call Write() or TryWrite() instead.
+        /// </summary>
+        /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
+        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void TryUpgradableRead(int timeoutMilliseconds, CriticalResourceDelegateWithVoidResult function)
+        {
+            bool wasLockObtained = false;
+            try
+            {
+                wasLockObtained = _criticalSection.TryAcquire(LockIntention.UpgradableRead, timeoutMilliseconds);
+                if (wasLockObtained)
+                {
+                    function(_value);
+                    return;
+                }
+            }
+            finally
+            {
+                if (wasLockObtained)
+                {
+                    _criticalSection.Release(LockIntention.UpgradableRead);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Attempts to acquire the read-only write upgradable lock, if successful then executes the delegate function and returns the nullable delegate value, otherwise returns null.
+        /// The delegate SHOULD NOT modify the passed value, otherwise corruption can occur. For modifications, call Write() or TryWrite() instead.
+        /// </summary>
+        /// <typeparam name="R"></typeparam>
+        /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
+        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public R? TryUpgradableRead<R>(out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R> function)
+        {
+            wasLockObtained = false;
+            try
+            {
+                wasLockObtained = _criticalSection.TryAcquire(LockIntention.UpgradableRead);
+                if (wasLockObtained)
+                {
+                    return function(_value);
+                }
+            }
+            finally
+            {
+                if (wasLockObtained)
+                {
+                    _criticalSection.Release(LockIntention.UpgradableRead);
+                }
+            }
+            return default;
+        }
+
+        /// <summary>
+        /// Attempts to acquire the read-only write upgradable lock for a given number of milliseconds, if successful then executes the delegate function and returns the nullable delegate value,
+        /// otherwise returns null.
+        /// The delegate SHOULD NOT modify the passed value, otherwise corruption can occur. For modifications, call Write() or TryWrite() instead.
+        /// </summary>
+        /// <typeparam name="R"></typeparam>
+        /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
+        /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
+        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public R? TryUpgradableRead<R>(out bool wasLockObtained, int timeoutMilliseconds, CriticalResourceDelegateWithNullableResultT<R> function)
+        {
+            wasLockObtained = false;
+            try
+            {
+                wasLockObtained = _criticalSection.TryAcquire(LockIntention.UpgradableRead, timeoutMilliseconds);
+                if (wasLockObtained)
+                {
+                    return function(_value);
+                }
+            }
+            finally
+            {
+                if (wasLockObtained)
+                {
+                    _criticalSection.Release(LockIntention.UpgradableRead);
+                }
+            }
+
+            return default;
+        }
+
+        /// <summary>
+        /// Attempts to acquire the read-only write upgradable lock. If successful then executes the delegate function and returns the non-nullable delegate value.
+        /// Otherwise returns the supplied default value.
+        /// The delegate SHOULD NOT modify the passed value, otherwise corruption can occur. For modifications, call Write() or TryWrite() instead.
+        /// </summary>
+        /// <typeparam name="R"></typeparam>
+        /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
+        /// <param name="defaultValue">The value to obtain if the lock could not be acquired.</param>
+        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public R TryUpgradableRead<R>(out bool wasLockObtained, R defaultValue, CriticalResourceDelegateWithNotNullableResultT<R> function)
+        {
+            wasLockObtained = false;
+            try
+            {
+                wasLockObtained = _criticalSection.TryAcquire(LockIntention.UpgradableRead);
+                if (wasLockObtained)
+                {
+                    return function(_value);
+                }
+            }
+            finally
+            {
+                if (wasLockObtained)
+                {
+                    _criticalSection.Release(LockIntention.UpgradableRead);
+                }
+            }
+            return defaultValue;
+        }
+
+        /// <summary>
+        /// Attempts to acquire the read-only write upgradable lock. If successful then executes the delegate function and returns the non-nullable delegate value.
+        /// Otherwise returns the supplied default value.
+        /// The delegate SHOULD NOT modify the passed value, otherwise corruption can occur. For modifications, call Write() or TryWrite() instead.
+        /// </summary>
+        /// <typeparam name="R"></typeparam>
+        /// <param name="defaultValue">The value to obtain if the lock could not be acquired.</param>
+        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public R TryUpgradableRead<R>(R defaultValue, CriticalResourceDelegateWithNotNullableResultT<R> function)
+        {
+            bool wasLockObtained = false;
+            try
+            {
+                wasLockObtained = _criticalSection.TryAcquire(LockIntention.UpgradableRead);
+                if (wasLockObtained)
+                {
+                    return function(_value);
+                }
+            }
+            finally
+            {
+                if (wasLockObtained)
+                {
+                    _criticalSection.Release(LockIntention.UpgradableRead);
+                }
+            }
+            return defaultValue;
+        }
+
+        /// <summary>
+        /// Attempts to acquire the read-only write upgradable lock for the given number of milliseconds. If successful then executes the delegate function and returns the non-nullable delegate value.
+        /// Otherwise returns the supplied default value.
+        /// The delegate SHOULD NOT modify the passed value, otherwise corruption can occur. For modifications, call Write() or TryWrite() instead.
+        /// </summary>
+        /// <typeparam name="R"></typeparam>
+        /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
+        /// <param name="defaultValue">The value to obtain if the lock could not be acquired.</param>
+        /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
+        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public R TryUpgradableRead<R>(out bool wasLockObtained, R defaultValue, int timeoutMilliseconds, CriticalResourceDelegateWithNotNullableResultT<R> function)
+        {
+            wasLockObtained = false;
+            try
+            {
+                wasLockObtained = _criticalSection.TryAcquire(LockIntention.UpgradableRead, timeoutMilliseconds);
+                if (wasLockObtained)
+                {
+                    return function(_value);
+                }
+            }
+            finally
+            {
+                if (wasLockObtained)
+                {
+                    _criticalSection.Release(LockIntention.UpgradableRead);
+                }
+            }
+
+            return defaultValue;
+        }
+
+        /// <summary>
+        /// Attempts to acquire the read-only write upgradable lock for the given number of milliseconds. If successful then executes the delegate function and returns the non-nullable delegate value.
+        /// Otherwise returns the supplied default value.
+        /// The delegate SHOULD NOT modify the passed value, otherwise corruption can occur. For modifications, call Write() or TryWrite() instead.
+        /// </summary>
+        /// <typeparam name="R"></typeparam>
+        /// <param name="defaultValue">The value to obtain if the lock could not be acquired.</param>
+        /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
+        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public R TryUpgradableRead<R>(R defaultValue, int timeoutMilliseconds, CriticalResourceDelegateWithNotNullableResultT<R> function)
+        {
+            bool wasLockObtained = false;
+            try
+            {
+                wasLockObtained = _criticalSection.TryAcquire(LockIntention.UpgradableRead, timeoutMilliseconds);
+                if (wasLockObtained)
+                {
+                    return function(_value);
+                }
+            }
+            finally
+            {
+                if (wasLockObtained)
+                {
+                    _criticalSection.Release(LockIntention.UpgradableRead);
                 }
             }
 
