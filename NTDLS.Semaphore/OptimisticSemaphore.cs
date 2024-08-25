@@ -735,6 +735,40 @@ namespace NTDLS.Semaphore
         #region Read/Write/TryRead/TryWrite overloads (nullable)
 
         /// <summary>
+        /// Blocks until the lock is acquired then executes the delegate function.
+        /// </summary>
+        /// <param name="function">The delegate function to execute when the lock is acquired.</param>
+        public R? ReadNullable<R>(CriticalResourceDelegateWithNullableResultT<R> function)
+        {
+            try
+            {
+                Acquire(LockIntention.Readonly);
+                return function();
+            }
+            finally
+            {
+                Release(LockIntention.Readonly);
+            }
+        }
+
+        /// <summary>
+        /// Blocks until the lock is acquired then executes the delegate function.
+        /// </summary>
+        /// <param name="function">The delegate function to execute when the lock is acquired.</param>
+        public R? WriteNullable<R>(CriticalResourceDelegateWithNullableResultT<R> function)
+        {
+            try
+            {
+                Acquire(LockIntention.Exclusive);
+                return function();
+            }
+            finally
+            {
+                Release(LockIntention.Exclusive);
+            }
+        }
+
+        /// <summary>
         /// Attempts to acquire the lock, if successful then executes the delegate function.
         /// </summary>
         /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
