@@ -1,4 +1,5 @@
 ﻿using NTDLS.Semaphore;
+using static System.Formats.Asn1.AsnWriter;
 
 namespace TestHarness
 {

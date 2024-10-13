@@ -48,7 +48,7 @@ namespace NTDLS.Semaphore
         /// </summary>
         /// <typeparam name="R">The type of the return value.</typeparam>
         /// <param name="obj">The variable that is being protected.</param>
-        public delegate R? CriticalResourceDelegateWithNullableResultT<R>(T obj);
+        public delegate R? CriticalResourceDelegateWithNullableResultT<R>(T? obj);
 
         /// <summary>
         /// Delegate for executions that require a non-nullable return value.
@@ -169,7 +169,7 @@ namespace NTDLS.Semaphore
         /// <typeparam name="R"></typeparam>
         /// <param name="function">The delegate function to execute when the lock is acquired.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public R? ReadNullable<R>(CriticalResourceDelegateWithNullableResultT<R> function)
+        public R? ReadNullable<R>(CriticalResourceDelegateWithNullableResultT<R?> function)
         {
             try
             {
@@ -188,7 +188,7 @@ namespace NTDLS.Semaphore
         /// <typeparam name="R"></typeparam>
         /// <param name="function">The delegate function to execute when the lock is acquired.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public R? WriteNullable<R>(CriticalResourceDelegateWithNullableResultT<R> function)
+        public R? WriteNullable<R>(CriticalResourceDelegateWithNullableResultT<R?> function)
         {
             try
             {
@@ -467,7 +467,7 @@ namespace NTDLS.Semaphore
         /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
         /// <param name="function">The delegate function to execute if the lock is acquired.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public R? TryRead<R>(out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R> function)
+        public R? TryReadNullable<R>(out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R?> function)
         {
             wasLockObtained = false;
             try
@@ -495,7 +495,7 @@ namespace NTDLS.Semaphore
         /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
         /// <param name="function">The delegate function to execute if the lock is acquired.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public R? TryWrite<R>(out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R> function)
+        public R? TryWriteNullable<R>(out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R?> function)
         {
             wasLockObtained = false;
             try
@@ -526,7 +526,7 @@ namespace NTDLS.Semaphore
         /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
         /// <param name="function">The delegate function to execute if the lock is acquired.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public R? TryRead<R>(out bool wasLockObtained, int timeoutMilliseconds, CriticalResourceDelegateWithNullableResultT<R> function)
+        public R? TryReadNullable<R>(out bool wasLockObtained, int timeoutMilliseconds, CriticalResourceDelegateWithNullableResultT<R?> function)
         {
             wasLockObtained = false;
             try
@@ -557,7 +557,7 @@ namespace NTDLS.Semaphore
         /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
         /// <param name="function">The delegate function to execute if the lock is acquired.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public R? TryWrite<R>(out bool wasLockObtained, int timeoutMilliseconds, CriticalResourceDelegateWithNullableResultT<R> function)
+        public R? TryWriteNullable<R>(out bool wasLockObtained, int timeoutMilliseconds, CriticalResourceDelegateWithNullableResultT<R?> function)
         {
             wasLockObtained = false;
             try
@@ -858,7 +858,7 @@ namespace NTDLS.Semaphore
         /// <typeparam name="R"></typeparam>
         /// <param name="function">The delegate function to execute when the lock is acquired.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public R? ReadUpgradableNullable<R>(CriticalResourceDelegateWithNullableResultT<R> function)
+        public R? ReadUpgradableNullable<R>(CriticalResourceDelegateWithNullableResultT<R?> function)
         {
             try
             {
@@ -1010,7 +1010,7 @@ namespace NTDLS.Semaphore
         /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
         /// <param name="function">The delegate function to execute if the lock is acquired.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public R? TryUpgradableRead<R>(out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R> function)
+        public R? TryUpgradableReadNullable<R>(out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R?> function)
         {
             wasLockObtained = false;
             try
@@ -1041,7 +1041,7 @@ namespace NTDLS.Semaphore
         /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
         /// <param name="function">The delegate function to execute if the lock is acquired.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public R? TryUpgradableRead<R>(out bool wasLockObtained, int timeoutMilliseconds, CriticalResourceDelegateWithNullableResultT<R> function)
+        public R? TryUpgradableReadNullable<R>(out bool wasLockObtained, int timeoutMilliseconds, CriticalResourceDelegateWithNullableResultT<R?> function)
         {
             wasLockObtained = false;
             try
@@ -1335,7 +1335,7 @@ namespace NTDLS.Semaphore
         /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
         /// <param name="function">The delegate function to execute if the lock is acquired.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public R? TryWriteAll<R>(ICriticalSection[] resources, out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R> function)
+        public R? TryWriteAllNullable<R>(ICriticalSection[] resources, out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R?> function)
         {
             var collection = new CriticalCollection[resources.Length];
 
@@ -1448,7 +1448,7 @@ namespace NTDLS.Semaphore
         /// <param name="defaultValue">The value to obtain if the lock could not be acquired.</param>
         /// <param name="function">The delegate function to execute if the lock is acquired.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public R? TryWriteAll<R>(ICriticalSection[] resources, int timeoutMilliseconds, out bool wasLockObtained, R defaultValue, CriticalResourceDelegateWithNullableResultT<R> function)
+        public R? TryWriteAllNullable<R>(ICriticalSection[] resources, int timeoutMilliseconds, out bool wasLockObtained, R defaultValue, CriticalResourceDelegateWithNullableResultT<R?> function)
         {
             var collection = new CriticalCollection[resources.Length];
 
@@ -1504,7 +1504,7 @@ namespace NTDLS.Semaphore
         /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
         /// <param name="function">The delegate function to execute if the lock is acquired.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public R? TryWriteAll<R>(ICriticalSection[] resources, int timeoutMilliseconds, out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R> function)
+        public R? TryWriteAllNullable<R>(ICriticalSection[] resources, int timeoutMilliseconds, out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R?> function)
         {
             var collection = new CriticalCollection[resources.Length];
 
@@ -1558,7 +1558,7 @@ namespace NTDLS.Semaphore
         /// <param name="resources">The array of other locks that must be obtained.</param>
         /// <param name="function">The delegate function to execute when the lock is acquired.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public R? WriteAll<R>(ICriticalSection[] resources, CriticalResourceDelegateWithNullableResultT<R> function)
+        public R? WriteAllNullable<R>(ICriticalSection[] resources, CriticalResourceDelegateWithNullableResultT<R?> function)
         {
             _criticalSection.Acquire(LockIntention.Exclusive);
 
@@ -1799,7 +1799,7 @@ namespace NTDLS.Semaphore
         /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
         /// <param name="function">The delegate function to execute if the lock is acquired.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public R? TryReadAll<R>(ICriticalSection[] resources, out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R> function)
+        public R? TryReadAllNullable<R>(ICriticalSection[] resources, out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R?> function)
         {
             var collection = new CriticalCollection[resources.Length];
 
@@ -1914,7 +1914,7 @@ namespace NTDLS.Semaphore
         /// <param name="function">The delegate function to execute if the lock is acquired.</param>
         /// <returns>the non-nullable value from the delegate function. Otherwise returns the given default value.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public R? TryReadAll<R>(ICriticalSection[] resources, int timeoutMilliseconds, out bool wasLockObtained, R defaultValue, CriticalResourceDelegateWithNullableResultT<R> function)
+        public R? TryReadAllNullable<R>(ICriticalSection[] resources, int timeoutMilliseconds, out bool wasLockObtained, R defaultValue, CriticalResourceDelegateWithNullableResultT<R?> function)
         {
             var collection = new CriticalCollection[resources.Length];
 
@@ -1971,7 +1971,7 @@ namespace NTDLS.Semaphore
         /// <param name="function">The delegate function to execute if the lock is acquired.</param>
         /// <returns>The nullable value from the delegate function. Otherwise returns null.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public R? TryReadAll<R>(ICriticalSection[] resources, int timeoutMilliseconds, out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R> function)
+        public R? TryReadAllNullable<R>(ICriticalSection[] resources, int timeoutMilliseconds, out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R?> function)
         {
             var collection = new CriticalCollection[resources.Length];
 
@@ -2026,7 +2026,7 @@ namespace NTDLS.Semaphore
         /// <param name="function">The delegate function to execute when the lock is acquired.</param>
         /// <returns>The nullable value from the delegate function. Otherwise returns null</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public R? ReadAll<R>(ICriticalSection[] resources, CriticalResourceDelegateWithNullableResultT<R> function)
+        public R? ReadAllNullable<R>(ICriticalSection[] resources, CriticalResourceDelegateWithNullableResultT<R?> function)
         {
             _criticalSection.Acquire(LockIntention.Readonly);
 

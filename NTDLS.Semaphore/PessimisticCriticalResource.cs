@@ -46,7 +46,7 @@
         /// </summary>
         /// <typeparam name="R">The type of the return value.</typeparam>
         /// <param name="obj">The variable that is being protected. It can be safely modified here.</param>
-        public delegate R? CriticalResourceDelegateWithNullableResultT<R>(T obj);
+        public delegate R? CriticalResourceDelegateWithNullableResultT<R>(T? obj);
 
         /// <summary>
         /// Delegate for executions that require a non-nullable return value.
@@ -220,7 +220,7 @@
         /// </summary>
         /// <typeparam name="R"></typeparam>
         /// <param name="function">The delegate function to execute when the lock is acquired.</param>
-        public R? UseNullable<R>(CriticalResourceDelegateWithNullableResultT<R> function)
+        public R? UseNullable<R>(CriticalResourceDelegateWithNullableResultT<R?> function)
         {
             try
             {
@@ -368,7 +368,7 @@
         /// <param name="resources">The array of other locks that must be obtained.</param>
         /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
         /// <param name="function">The delegate function to execute if the lock is acquired.</param>
-        public R? TryUseAll<R>(ICriticalSection[] resources, out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R> function)
+        public R? TryUseAllNullable<R>(ICriticalSection[] resources, out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R?> function)
         {
             var collection = new CriticalCollection[resources.Length];
 
@@ -479,7 +479,7 @@
         /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
         /// <param name="defaultValue">The value to obtain if the lock could not be acquired.</param>
         /// <param name="function">The delegate function to execute if the lock is acquired.</param>
-        public R? TryUseAll<R>(ICriticalSection[] resources, int timeoutMilliseconds, out bool wasLockObtained, R defaultValue, CriticalResourceDelegateWithNullableResultT<R> function)
+        public R? TryUseAllNullable<R>(ICriticalSection[] resources, int timeoutMilliseconds, out bool wasLockObtained, R defaultValue, CriticalResourceDelegateWithNullableResultT<R?> function)
         {
             var collection = new CriticalCollection[resources.Length];
 
@@ -534,7 +534,7 @@
         /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
         /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
         /// <param name="function">The delegate function to execute if the lock is acquired.</param>
-        public R? TryUseAll<R>(ICriticalSection[] resources, int timeoutMilliseconds, out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R> function)
+        public R? TryUseAllNullable<R>(ICriticalSection[] resources, int timeoutMilliseconds, out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R?> function)
         {
             var collection = new CriticalCollection[resources.Length];
 
@@ -587,7 +587,7 @@
         /// <typeparam name="R"></typeparam>
         /// <param name="resources">The array of other locks that must be obtained.</param>
         /// <param name="function">The delegate function to execute when the lock is acquired.</param>
-        public R? UseAll<R>(ICriticalSection[] resources, CriticalResourceDelegateWithNullableResultT<R> function)
+        public R? UseAllNullable<R>(ICriticalSection[] resources, CriticalResourceDelegateWithNullableResultT<R?> function)
         {
             Acquire();
 
@@ -804,7 +804,7 @@
         /// <typeparam name="R"></typeparam>
         /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
         /// <param name="function">The delegate function to execute if the lock is acquired.</param>
-        public R? TryUse<R>(out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R> function)
+        public R? TryUseNullable<R>(out bool wasLockObtained, CriticalResourceDelegateWithNullableResultT<R?> function)
         {
             wasLockObtained = false;
             try
@@ -833,7 +833,7 @@
         /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
         /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
         /// <param name="function">The delegate function to execute if the lock is acquired.</param>
-        public R? TryUse<R>(out bool wasLockObtained, int timeoutMilliseconds, CriticalResourceDelegateWithNullableResultT<R> function)
+        public R? TryUseNullable<R>(out bool wasLockObtained, int timeoutMilliseconds, CriticalResourceDelegateWithNullableResultT<R?> function)
         {
             wasLockObtained = false;
             try

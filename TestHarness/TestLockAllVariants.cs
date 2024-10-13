@@ -1,4 +1,5 @@
 ﻿using NTDLS.Semaphore;
+using static System.Formats.Asn1.AsnWriter;
 
 namespace TestHarness
 {
@@ -24,20 +25,20 @@ namespace TestHarness
             //  which will cause a deadlock if called in parallel with other calls to UseAll(), ReadAll() or WriteAll().
             // For these reasons, we will test them here and not in parallel.
             _optimisticSemaphore.ReadAll(
-                new ICriticalSection[] { _optimisticSemaphore, _pessimisticSemaphore, _optimisticCriticalSection, _pessimisticCriticalSection }, (o) =>
+                [_optimisticSemaphore, _pessimisticSemaphore, _optimisticCriticalSection, _pessimisticCriticalSection], (o) =>
                 {
                     _totalAllLockCount++;
                     //Console.WriteLine("[optimisticSemaphore.ReadAll] All locks obtained.");
                 });
 
             _optimisticSemaphore.WriteAll(
-                new ICriticalSection[] { _optimisticSemaphore, _pessimisticSemaphore, _optimisticCriticalSection, _pessimisticCriticalSection }, (o) =>
+                [_optimisticSemaphore, _pessimisticSemaphore, _optimisticCriticalSection, _pessimisticCriticalSection], (o) =>
                 {
                     _totalAllLockCount++;
                     //Console.WriteLine("[optimisticSemaphore.WriteAll] All locks obtained.");
                 });
             _pessimisticSemaphore.UseAll(
-                new ICriticalSection[] { _optimisticSemaphore, _pessimisticSemaphore, _optimisticCriticalSection, _pessimisticCriticalSection }, (o) =>
+                [_optimisticSemaphore, _pessimisticSemaphore, _optimisticCriticalSection, _pessimisticCriticalSection], (o) =>
                 {
                     _totalAllLockCount++;
                     //Console.WriteLine("[pessimisticSemaphore.UseAll] All locks obtained.");
