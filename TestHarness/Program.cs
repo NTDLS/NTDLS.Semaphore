@@ -1,4 +1,6 @@
-﻿namespace TestHarness
+﻿using NTDLS.Semaphore;
+
+namespace TestHarness
 {
     internal class Program
     {
@@ -14,6 +16,7 @@
             //
             //ThreadOwnershipTracking.Enable();
 
+            ThreadLockOwnershipTracking.Enable();
 
             int iterations = 100;
 

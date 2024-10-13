@@ -10,6 +10,22 @@ namespace NTDLS.Semaphore
     {
         private readonly ReaderWriterLockSlim _readerWriterLockSlim = new(LockRecursionPolicy.SupportsRecursion);
 
+        /// <summary>
+        /// Thread lock ownership tracking, used for debugging when ThreadLockOwnershipTracking.Enabled is true.
+        /// </summary>
+        public Dictionary<int, HeldLock>? Ownership { get; private set; }
+
+        /// <summary>
+        /// Creates a new instance of OptimisticSemaphore.
+        /// </summary>
+        public OptimisticSemaphore()
+        {
+            if (ThreadLockOwnershipTracking.Enabled)
+            {
+                Ownership = new();
+            }
+        }
+
         #region Delegates.
 
         /// <summary>
@@ -131,11 +147,34 @@ namespace NTDLS.Semaphore
         private void Acquire(LockIntention intention)
         {
             if (intention == LockIntention.Readonly)
+            {
                 _readerWriterLockSlim.EnterReadLock();
-            if (intention == LockIntention.UpgradableRead)
+            }
+            else if (intention == LockIntention.UpgradableRead)
+            {
                 _readerWriterLockSlim.EnterUpgradeableReadLock();
+            }
             else if (intention == LockIntention.Exclusive)
+            {
                 _readerWriterLockSlim.EnterWriteLock();
+            }
+
+            if (Ownership != null)
+            {
+                lock (Ownership)
+                {
+                    var managedThreadId = Environment.CurrentManagedThreadId;
+
+                    if (Ownership.TryGetValue(managedThreadId, out var heldLock))
+                    {
+                        heldLock.Intentions.Add(intention);
+                    }
+                    else
+                    {
+                        Ownership.Add(managedThreadId, new HeldLock(intention, Environment.CurrentManagedThreadId));
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -154,30 +193,85 @@ namespace NTDLS.Semaphore
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool TryAcquire(LockIntention intention, int timeoutMilliseconds)
         {
-            if (intention == LockIntention.Readonly)
-                return _readerWriterLockSlim.TryEnterReadLock(timeoutMilliseconds);
-            if (intention == LockIntention.UpgradableRead)
-                return _readerWriterLockSlim.TryEnterUpgradeableReadLock(timeoutMilliseconds);
-            else if (intention == LockIntention.Exclusive)
-                return _readerWriterLockSlim.TryEnterWriteLock(timeoutMilliseconds);
+            bool acquired = false;
 
-            throw new Exception("The lock intention type is not implemented");
+            if (intention == LockIntention.Readonly)
+            {
+                acquired = _readerWriterLockSlim.TryEnterReadLock(timeoutMilliseconds);
+            }
+            else if (intention == LockIntention.UpgradableRead)
+            {
+                acquired = _readerWriterLockSlim.TryEnterUpgradeableReadLock(timeoutMilliseconds);
+            }
+            else if (intention == LockIntention.Exclusive)
+            {
+                acquired = _readerWriterLockSlim.TryEnterWriteLock(timeoutMilliseconds);
+            }
+            else
+            {
+                throw new Exception("The lock intention type is not implemented");
+            }
+
+            if (acquired && Ownership != null)
+            {
+                lock (Ownership)
+                {
+                    var managedThreadId = Environment.CurrentManagedThreadId;
+
+                    if (Ownership.TryGetValue(managedThreadId, out var heldLock))
+                    {
+                        heldLock.Intentions.Add(intention);
+                    }
+                    else
+                    {
+                        Ownership.Add(managedThreadId, new HeldLock(intention, Environment.CurrentManagedThreadId));
+                    }
+                }
+            }
+
+            return acquired;
         }
 
         /// <summary>
         /// Releases the lock held by the current thread.
         /// </summary>
-        /// <param name="intention"></param>
-        /// <exception cref="Exception"></exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void Release(LockIntention intention)
         {
             if (intention == LockIntention.Readonly)
+            {
                 _readerWriterLockSlim.ExitReadLock();
-            if (intention == LockIntention.UpgradableRead)
+            }
+            else if (intention == LockIntention.UpgradableRead)
+            {
                 _readerWriterLockSlim.ExitUpgradeableReadLock();
+            }
             else if (intention == LockIntention.Exclusive)
+            {
                 _readerWriterLockSlim.ExitWriteLock();
+            }
+
+            if (Ownership != null)
+            {
+                lock (Ownership)
+                {
+                    var managedThreadId = Environment.CurrentManagedThreadId;
+
+                    if (Ownership.TryGetValue(managedThreadId, out var heldLock))
+                    {
+                        heldLock.Intentions.Remove(intention);
+
+                        if (heldLock.Intentions.Count == 0)
+                        {
+                            Ownership.Remove(managedThreadId);
+                        }
+                    }
+                    else
+                    {
+                        throw new Exception("Attempted to release non-owned lock.");
+                    }
+                }
+            }
         }
 
         #endregion
@@ -187,52 +281,62 @@ namespace NTDLS.Semaphore
         /// <summary>
         /// Gets the total number of unique threads that have entered the lock in read mode.
         /// </summary>
-        public int CurrentReadCount => _readerWriterLockSlim.CurrentReadCount;
+        public int CurrentReadCount
+            => _readerWriterLockSlim.CurrentReadCount;
 
         /// <summary>
         /// Gets a value that indicates whether the current thread has entered the lock in read mode.
         /// </summary>
-        public bool IsReadLockHeld => _readerWriterLockSlim.IsReadLockHeld;
+        public bool IsReadLockHeld
+            => _readerWriterLockSlim.IsReadLockHeld;
 
         /// <summary>
         /// Gets a value that indicates whether the current thread has entered the lock in upgradeable mode.
         /// </summary>
-        public bool IsUpgradeableReadLockHeld => _readerWriterLockSlim.IsUpgradeableReadLockHeld;
+        public bool IsUpgradeableReadLockHeld
+            => _readerWriterLockSlim.IsUpgradeableReadLockHeld;
 
         /// <summary>
         /// Gets a value that indicates whether the current thread has entered the lock in write mode.
         /// </summary>
-        public bool IsWriteLockHeld => _readerWriterLockSlim.IsWriteLockHeld;
+        public bool IsWriteLockHeld
+            => _readerWriterLockSlim.IsWriteLockHeld;
 
         /// <summary>
         /// Gets the number of times the current thread has entered the lock in read mode, as an indication of recursion.
         /// </summary>
-        public int RecursiveReadCount => _readerWriterLockSlim.RecursiveReadCount;
+        public int RecursiveReadCount
+            => _readerWriterLockSlim.RecursiveReadCount;
 
         /// <summary>
         /// Gets the number of times the current thread has entered the lock in upgradeable mode, as an indication of recursion.
         /// </summary>
-        public int RecursiveUpgradeCount => _readerWriterLockSlim.RecursiveUpgradeCount;
+        public int RecursiveUpgradeCount
+            => _readerWriterLockSlim.RecursiveUpgradeCount;
 
         /// <summary>
         /// Gets the number of times the current thread has entered the lock in write mode, as an indication of recursion.
         /// </summary>
-        public int RecursiveWriteCount => _readerWriterLockSlim.RecursiveWriteCount;
+        public int RecursiveWriteCount
+            => _readerWriterLockSlim.RecursiveWriteCount;
 
         /// <summary>
         /// Gets the total number of threads that are waiting to enter the lock in read mode.
         /// </summary>
-        public int WaitingReadCount => _readerWriterLockSlim.WaitingReadCount;
+        public int WaitingReadCount
+            => _readerWriterLockSlim.WaitingReadCount;
 
         /// <summary>
         /// Gets the total number of threads that are waiting to enter the lock in upgradeable mode.
         /// </summary>
-        public int WaitingUpgradeCount => _readerWriterLockSlim.WaitingUpgradeCount;
+        public int WaitingUpgradeCount
+            => _readerWriterLockSlim.WaitingUpgradeCount;
 
         /// <summary>
         /// Gets the total number of threads that are waiting to enter the lock in write mode.
         /// </summary>
-        public int WaitingWriteCount => _readerWriterLockSlim.WaitingWriteCount;
+        public int WaitingWriteCount
+            => _readerWriterLockSlim.WaitingWriteCount;
 
         #endregion
 
