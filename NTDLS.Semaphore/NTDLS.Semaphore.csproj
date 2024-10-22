@@ -15,12 +15,13 @@
     <PackageTags>threading;critical-section;semaphore;parallel-execution;sequential-execution</PackageTags>
     <PackageReleaseNotes>
       Exposed read-only semaphores.
+      Additional read-all, write all.
     </PackageReleaseNotes>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Authors>NetworkDLS</Authors>
     <Company>NetworkDLS</Company>
-    <version>3.4.6</version>
+    <version>3.4.7</version>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <IncludeSymbols>True</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>

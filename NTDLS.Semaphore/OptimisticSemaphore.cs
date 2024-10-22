@@ -1333,7 +1333,7 @@ namespace NTDLS.Semaphore
 
         #endregion
 
-        #region UpgradableRead/TryUpgradableRead overloads (nullable)
+        #region UpgradableRead/TryUpgradableRead overloads (nullable).
 
         /// <summary>
         /// Attempts to acquire the read-only write upgradable lock, if successful then executes the delegate function.
@@ -1437,6 +1437,110 @@ namespace NTDLS.Semaphore
                     Release(LockIntention.UpgradableRead);
                 }
             }
+        }
+
+        #endregion
+
+        #region TryReadAll/TryWriteAll.
+
+        /// <summary>
+        /// Attempts to acquire the lock. If successful, executes the delegate function.
+        /// The delegate SHOULD NOT modify the passed value, otherwise corruption can occur. For modifications, call Write() or TryWrite() instead.
+        /// </summary>
+        /// <param name="resources">The array of other locks that must be obtained.</param>
+        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool TryReadAll(ICriticalSection[] resources, CriticalResourceDelegateWithVoidResult function)
+        {
+            var collection = new CriticalCollection[resources.Length];
+
+            if (TryAcquire(LockIntention.Readonly))
+            {
+                try
+                {
+                    for (int i = 0; i < collection.Length; i++)
+                    {
+                        collection[i] = new(resources[i]);
+                        collection[i].IsLockHeld = collection[i].Resource.TryAcquire(LockIntention.Readonly);
+
+                        if (collection[i].IsLockHeld == false)
+                        {
+                            //We didn't get one of the locks, free the ones we did get and bailout.
+                            foreach (var lockObject in collection.Where(o => o != null && o.IsLockHeld))
+                            {
+                                lockObject.Resource.Release(LockIntention.Readonly);
+                            }
+
+                            return false;
+                        }
+                    }
+
+                    function();
+
+                    foreach (var lockObject in collection.Where(o => o != null && o.IsLockHeld))
+                    {
+                        lockObject.Resource.Release(LockIntention.Readonly);
+                    }
+
+                    return true;
+                }
+                finally
+                {
+                    Release(LockIntention.Readonly);
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Attempts to acquire the lock. If successful, executes the delegate function.
+        /// The delegate SHOULD NOT modify the passed value, otherwise corruption can occur. For modifications, call Write() or TryWrite() instead.
+        /// </summary>
+        /// <param name="resources">The array of other locks that must be obtained.</param>
+        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool TryWriteAll(ICriticalSection[] resources, CriticalResourceDelegateWithVoidResult function)
+        {
+            var collection = new CriticalCollection[resources.Length];
+
+            if (TryAcquire(LockIntention.Exclusive))
+            {
+                try
+                {
+                    for (int i = 0; i < collection.Length; i++)
+                    {
+                        collection[i] = new(resources[i]);
+                        collection[i].IsLockHeld = collection[i].Resource.TryAcquire(LockIntention.Exclusive);
+
+                        if (collection[i].IsLockHeld == false)
+                        {
+                            //We didn't get one of the locks, free the ones we did get and bailout.
+                            foreach (var lockObject in collection.Where(o => o != null && o.IsLockHeld))
+                            {
+                                lockObject.Resource.Release(LockIntention.Exclusive);
+                            }
+
+                            return false;
+                        }
+                    }
+
+                    function();
+
+                    foreach (var lockObject in collection.Where(o => o != null && o.IsLockHeld))
+                    {
+                        lockObject.Resource.Release(LockIntention.Exclusive);
+                    }
+
+                    return true;
+                }
+                finally
+                {
+                    Release(LockIntention.Exclusive);
+                }
+            }
+
+            return false;
         }
 
         #endregion

@@ -6,21 +6,6 @@
     /// <typeparam name="T">The type of the resource that will be instantiated and protected.</typeparam>
     public class PessimisticCriticalResource<T> : ICriticalSection where T : class, new()
     {
-        #region Local Classes.
-
-        private class CriticalCollection
-        {
-            public ICriticalSection Resource { get; set; }
-            public bool IsLockHeld { get; set; } = false;
-
-            public CriticalCollection(ICriticalSection resource)
-            {
-                Resource = resource;
-            }
-        }
-
-        #endregion
-
         /// <summary>
         /// Identifies the current thread that owns the lock.
         /// </summary>
