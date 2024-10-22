@@ -1494,6 +1494,21 @@ namespace NTDLS.Semaphore
         }
 
         /// <summary>
+        /// Acquire the lock, executes the delegate function.
+        /// The delegate SHOULD NOT modify the passed value, otherwise corruption can occur. For modifications, call Write() or TryWrite() instead.
+        /// </summary>
+        /// <param name="resources">The array of other locks that must be obtained.</param>
+        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void ReadAll(ICriticalSection[] resources, CriticalResourceDelegateWithVoidResult function)
+        {
+            while (!TryReadAll(resources, function))
+            {
+                Thread.Sleep(1);
+            }
+        }
+
+        /// <summary>
         /// Attempts to acquire the lock. If successful, executes the delegate function.
         /// The delegate SHOULD NOT modify the passed value, otherwise corruption can occur. For modifications, call Write() or TryWrite() instead.
         /// </summary>
@@ -1541,6 +1556,21 @@ namespace NTDLS.Semaphore
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Acquire the lock, executes the delegate function.
+        /// The delegate SHOULD NOT modify the passed value, otherwise corruption can occur. For modifications, call Write() or TryWrite() instead.
+        /// </summary>
+        /// <param name="resources">The array of other locks that must be obtained.</param>
+        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WriteAll(ICriticalSection[] resources, CriticalResourceDelegateWithVoidResult function)
+        {
+            while (!TryWriteAll(resources, function))
+            {
+                Thread.Sleep(1);
+            }
         }
 
         #endregion
