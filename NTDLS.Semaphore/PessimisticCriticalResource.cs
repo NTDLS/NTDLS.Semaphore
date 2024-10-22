@@ -28,6 +28,11 @@
         private readonly ICriticalSection _criticalSection;
         private readonly T _value;
 
+        /// <summary>
+        /// The critical section used by this resource. Allows for external locking.
+        /// </summary>
+        public ICriticalSection CriticalSection => _criticalSection;
+
         #region Delegates.
 
         /// <summary>
