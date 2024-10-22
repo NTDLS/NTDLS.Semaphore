@@ -16,12 +16,13 @@
     <PackageReleaseNotes>
       Exposed read-only semaphores.
       Additional read-all, write all.
+      Varieties of try now return boolean.
     </PackageReleaseNotes>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Authors>NetworkDLS</Authors>
     <Company>NetworkDLS</Company>
-    <version>3.4.8</version>
+    <version>3.4.9</version>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <IncludeSymbols>True</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>

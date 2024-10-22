@@ -227,7 +227,7 @@
         /// Attempts to acquire the critical section, if successful executes the given delegate function.
         /// </summary>
         /// <param name="function">The delegate function to execute if the lock is acquired.</param>
-        public void TryUse(CriticalSectionDelegateWithVoidResult function)
+        public bool TryUse(CriticalSectionDelegateWithVoidResult function)
         {
             if (TryAcquire())
             {
@@ -239,7 +239,9 @@
                 {
                     Release();
                 }
+                return true;
             }
+            return false;
         }
 
         /// <summary>
@@ -247,7 +249,7 @@
         /// </summary>
         /// <param name="timeout"></param>
         /// <param name="function">The delegate function to execute if the lock is acquired.</param>
-        public void TryUse(int timeout, CriticalSectionDelegateWithVoidResult function)
+        public bool TryUse(int timeout, CriticalSectionDelegateWithVoidResult function)
         {
             if (TryAcquire(timeout))
             {
@@ -259,50 +261,9 @@
                 {
                     Release();
                 }
+                return true;
             }
-        }
-
-        /// <summary>
-        /// Attempts to acquire the critical section, if successful executes the given delegate function.
-        /// </summary>
-        /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
-        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
-        public void TryUse(out bool wasLockObtained, CriticalSectionDelegateWithVoidResult function)
-        {
-            wasLockObtained = TryAcquire();
-            if (wasLockObtained)
-            {
-                try
-                {
-                    function();
-                }
-                finally
-                {
-                    Release();
-                }
-            }
-        }
-
-        /// <summary>
-        /// Attempts to acquire the critical section, if successful executes the given delegate function.
-        /// </summary>
-        /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
-        /// <param name="timeout"></param>
-        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
-        public void TryUse(out bool wasLockObtained, int timeout, CriticalSectionDelegateWithVoidResult function)
-        {
-            wasLockObtained = TryAcquire(timeout);
-            if (wasLockObtained)
-            {
-                try
-                {
-                    function();
-                }
-                finally
-                {
-                    Release();
-                }
-            }
+            return false;
         }
 
         /// <summary>

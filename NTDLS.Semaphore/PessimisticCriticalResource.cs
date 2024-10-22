@@ -228,33 +228,7 @@
         /// </summary>
         /// <param name="resources">The array of other locks that must be obtained.</param>
         /// <param name="function">The delegate function to execute if the lock is acquired.</param>
-        /// <returns>Returns true if the lock was obtained.</returns>
         public bool TryUseAll(ICriticalSection[] resources, CriticalResourceDelegateWithVoidResult function)
-        {
-            TryUseAll(resources, out bool wasLockObtained, function);
-            return wasLockObtained;
-        }
-
-        /// <summary>
-        /// Attempts to acquire the lock. If successful, executes the delegate function.
-        /// </summary>
-        /// <param name="resources">The array of other locks that must be obtained.</param>
-        /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
-        /// /// <param name="function">The delegate function to execute if the lock is acquired.</param>
-        /// <returns>Returns true if the lock was obtained.</returns>
-        public bool TryUseAll(ICriticalSection[] resources, int timeoutMilliseconds, CriticalResourceDelegateWithVoidResult function)
-        {
-            TryUseAll(resources, timeoutMilliseconds, out bool wasLockObtained, function);
-            return wasLockObtained;
-        }
-
-        /// <summary>
-        /// Attempts to acquire the lock. If successful, executes the delegate function.
-        /// </summary>
-        /// <param name="resources">The array of other locks that must be obtained.</param>
-        /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
-        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
-        public void TryUseAll(ICriticalSection[] resources, out bool wasLockObtained, CriticalResourceDelegateWithVoidResult function)
         {
             var collection = new CriticalCollection[resources.Length];
 
@@ -275,8 +249,7 @@
                                 lockObject.Resource.Release();
                             }
 
-                            wasLockObtained = false;
-                            return;
+                            return false;
                         }
                     }
 
@@ -286,9 +259,8 @@
                     {
                         lockObject.Resource.Release();
                     }
-                    wasLockObtained = true;
 
-                    return;
+                    return true;
                 }
                 finally
                 {
@@ -296,7 +268,7 @@
                 }
             }
 
-            wasLockObtained = false;
+            return false;
         }
 
         /// <summary>
@@ -304,9 +276,8 @@
         /// </summary>
         /// <param name="resources">The array of other locks that must be obtained.</param>
         /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
-        /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
         /// <param name="function">The delegate function to execute if the lock is acquired.</param>
-        public void TryUseAll(ICriticalSection[] resources, int timeoutMilliseconds, out bool wasLockObtained, CriticalResourceDelegateWithVoidResult function)
+        public bool TryUseAll(ICriticalSection[] resources, int timeoutMilliseconds, CriticalResourceDelegateWithVoidResult function)
         {
             var collection = new CriticalCollection[resources.Length];
 
@@ -327,8 +298,7 @@
                                 lockObject.Resource.Release();
                             }
 
-                            wasLockObtained = false;
-                            return;
+                            return false;
                         }
                     }
 
@@ -338,9 +308,8 @@
                     {
                         lockObject.Resource.Release();
                     }
-                    wasLockObtained = true;
 
-                    return;
+                    return true;
                 }
                 finally
                 {
@@ -348,7 +317,7 @@
                 }
             }
 
-            wasLockObtained = false;
+            return false;
         }
 
         /// <summary>
@@ -686,34 +655,8 @@
         /// <summary>
         /// Attempts to acquire the lock, if successful then executes the delegate function.
         /// </summary>
-        /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
         /// <param name="function">The delegate function to execute if the lock is acquired.</param>
-        public void TryUse(out bool wasLockObtained, CriticalResourceDelegateWithVoidResult function)
-        {
-            wasLockObtained = false;
-            try
-            {
-                wasLockObtained = TryAcquire();
-                if (wasLockObtained)
-                {
-                    function(_value);
-                    return;
-                }
-            }
-            finally
-            {
-                if (wasLockObtained)
-                {
-                    Release();
-                }
-            }
-        }
-
-        /// <summary>
-        /// Attempts to acquire the lock, if successful then executes the delegate function.
-        /// </summary>
-        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
-        public void TryUse(CriticalResourceDelegateWithVoidResult function)
+        public bool TryUse(CriticalResourceDelegateWithVoidResult function)
         {
             bool wasLockObtained = false;
             try
@@ -722,7 +665,6 @@
                 if (wasLockObtained)
                 {
                     function(_value);
-                    return;
                 }
             }
             finally
@@ -732,33 +674,7 @@
                     Release();
                 }
             }
-        }
-
-        /// <summary>
-        /// Attempts to acquire the lock for the given number of milliseconds, if successful then executes the delegate function.
-        /// </summary>
-        /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
-        /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
-        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
-        public void TryUse(out bool wasLockObtained, int timeoutMilliseconds, CriticalResourceDelegateWithVoidResult function)
-        {
-            wasLockObtained = false;
-            try
-            {
-                wasLockObtained = TryAcquire(timeoutMilliseconds);
-                if (wasLockObtained)
-                {
-                    function(_value);
-                    return;
-                }
-            }
-            finally
-            {
-                if (wasLockObtained)
-                {
-                    Release();
-                }
-            }
+            return wasLockObtained;
         }
 
         /// <summary>
@@ -766,7 +682,7 @@
         /// </summary>
         /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
         /// <param name="function">The delegate function to execute if the lock is acquired.</param>
-        public void TryUse(int timeoutMilliseconds, CriticalResourceDelegateWithVoidResult function)
+        public bool TryUse(int timeoutMilliseconds, CriticalResourceDelegateWithVoidResult function)
         {
             bool wasLockObtained = false;
             try
@@ -775,7 +691,6 @@
                 if (wasLockObtained)
                 {
                     function(_value);
-                    return;
                 }
             }
             finally
@@ -785,6 +700,7 @@
                     Release();
                 }
             }
+            return wasLockObtained;
         }
 
         /// <summary>

@@ -232,65 +232,9 @@ namespace NTDLS.Semaphore
         /// Attempts to acquire the lock, if successful then executes the delegate function.
         /// The delegate SHOULD NOT modify the passed value, otherwise corruption can occur. For modifications, call Write() or TryWrite() instead.
         /// </summary>
-        /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
         /// <param name="function">The delegate function to execute if the lock is acquired.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void TryRead(out bool wasLockObtained, CriticalResourceDelegateWithVoidResult function)
-        {
-            wasLockObtained = false;
-            try
-            {
-                wasLockObtained = _criticalSection.TryAcquire(LockIntention.Readonly);
-                if (wasLockObtained)
-                {
-                    function(_value);
-                    return;
-                }
-            }
-            finally
-            {
-                if (wasLockObtained)
-                {
-                    _criticalSection.Release(LockIntention.Readonly);
-                }
-            }
-        }
-
-
-        /// <summary>
-        /// Attempts to acquire the lock, if successful then executes the delegate function.
-        /// </summary>
-        /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
-        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void TryWrite(out bool wasLockObtained, CriticalResourceDelegateWithVoidResult function)
-        {
-            wasLockObtained = false;
-            try
-            {
-                wasLockObtained = _criticalSection.TryAcquire(LockIntention.Exclusive);
-                if (wasLockObtained)
-                {
-                    function(_value);
-                    return;
-                }
-            }
-            finally
-            {
-                if (wasLockObtained)
-                {
-                    _criticalSection.Release(LockIntention.Exclusive);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Attempts to acquire the lock, if successful then executes the delegate function.
-        /// The delegate SHOULD NOT modify the passed value, otherwise corruption can occur. For modifications, call Write() or TryWrite() instead.
-        /// </summary>
-        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void TryRead(CriticalResourceDelegateWithVoidResult function)
+        public bool TryRead(CriticalResourceDelegateWithVoidResult function)
         {
             bool wasLockObtained = false;
             try
@@ -299,7 +243,6 @@ namespace NTDLS.Semaphore
                 if (wasLockObtained)
                 {
                     function(_value);
-                    return;
                 }
             }
             finally
@@ -309,14 +252,16 @@ namespace NTDLS.Semaphore
                     _criticalSection.Release(LockIntention.Readonly);
                 }
             }
+            return wasLockObtained;
         }
+
 
         /// <summary>
         /// Attempts to acquire the lock, if successful then executes the delegate function.
         /// </summary>
         /// <param name="function">The delegate function to execute if the lock is acquired.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void TryWrite(CriticalResourceDelegateWithVoidResult function)
+        public bool TryWrite(CriticalResourceDelegateWithVoidResult function)
         {
             bool wasLockObtained = false;
             try
@@ -325,7 +270,6 @@ namespace NTDLS.Semaphore
                 if (wasLockObtained)
                 {
                     function(_value);
-                    return;
                 }
             }
             finally
@@ -335,63 +279,8 @@ namespace NTDLS.Semaphore
                     _criticalSection.Release(LockIntention.Exclusive);
                 }
             }
-        }
 
-        /// <summary>
-        /// Attempts to acquire the lock for the given number of milliseconds, if successful then executes the delegate function.
-        /// The delegate SHOULD NOT modify the passed value, otherwise corruption can occur. For modifications, call Write() or TryWrite() instead.
-        /// </summary>
-        /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
-        /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
-        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void TryRead(out bool wasLockObtained, int timeoutMilliseconds, CriticalResourceDelegateWithVoidResult function)
-        {
-            wasLockObtained = false;
-            try
-            {
-                wasLockObtained = _criticalSection.TryAcquire(LockIntention.Readonly, timeoutMilliseconds);
-                if (wasLockObtained)
-                {
-                    function(_value);
-                    return;
-                }
-            }
-            finally
-            {
-                if (wasLockObtained)
-                {
-                    _criticalSection.Release(LockIntention.Readonly);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Attempts to acquire the lock for the given number of milliseconds, if successful then executes the delegate function.
-        /// </summary>
-        /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
-        /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
-        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void TryWrite(out bool wasLockObtained, int timeoutMilliseconds, CriticalResourceDelegateWithVoidResult function)
-        {
-            wasLockObtained = false;
-            try
-            {
-                wasLockObtained = _criticalSection.TryAcquire(LockIntention.Exclusive, timeoutMilliseconds);
-                if (wasLockObtained)
-                {
-                    function(_value);
-                    return;
-                }
-            }
-            finally
-            {
-                if (wasLockObtained)
-                {
-                    _criticalSection.Release(LockIntention.Exclusive);
-                }
-            }
+            return wasLockObtained;
         }
 
         /// <summary>
@@ -401,7 +290,7 @@ namespace NTDLS.Semaphore
         /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
         /// <param name="function">The delegate function to execute if the lock is acquired.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void TryRead(int timeoutMilliseconds, CriticalResourceDelegateWithVoidResult function)
+        public bool TryRead(int timeoutMilliseconds, CriticalResourceDelegateWithVoidResult function)
         {
             bool wasLockObtained = false;
             try
@@ -410,7 +299,6 @@ namespace NTDLS.Semaphore
                 if (wasLockObtained)
                 {
                     function(_value);
-                    return;
                 }
             }
             finally
@@ -420,6 +308,7 @@ namespace NTDLS.Semaphore
                     _criticalSection.Release(LockIntention.Readonly);
                 }
             }
+            return wasLockObtained;
         }
 
         /// <summary>
@@ -428,7 +317,7 @@ namespace NTDLS.Semaphore
         /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
         /// <param name="function">The delegate function to execute if the lock is acquired.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void TryWrite(int timeoutMilliseconds, CriticalResourceDelegateWithVoidResult function)
+        public bool TryWrite(int timeoutMilliseconds, CriticalResourceDelegateWithVoidResult function)
         {
             bool wasLockObtained = false;
             try
@@ -437,7 +326,6 @@ namespace NTDLS.Semaphore
                 if (wasLockObtained)
                 {
                     function(_value);
-                    return;
                 }
             }
             finally
@@ -447,6 +335,7 @@ namespace NTDLS.Semaphore
                     _criticalSection.Release(LockIntention.Exclusive);
                 }
             }
+            return wasLockObtained;
         }
 
         /// <summary>
@@ -884,37 +773,9 @@ namespace NTDLS.Semaphore
         /// Attempts to acquire the read-only write upgradable lock, if successful then executes the delegate function.
         /// The delegate SHOULD NOT modify the passed value, otherwise corruption can occur. For modifications, call Write() or TryWrite() instead.
         /// </summary>
-        /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
         /// <param name="function">The delegate function to execute if the lock is acquired.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void TryUpgradableRead(out bool wasLockObtained, CriticalResourceDelegateWithVoidResult function)
-        {
-            wasLockObtained = false;
-            try
-            {
-                wasLockObtained = _criticalSection.TryAcquire(LockIntention.UpgradableRead);
-                if (wasLockObtained)
-                {
-                    function(_value);
-                    return;
-                }
-            }
-            finally
-            {
-                if (wasLockObtained)
-                {
-                    _criticalSection.Release(LockIntention.UpgradableRead);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Attempts to acquire the read-only write upgradable lock, if successful then executes the delegate function.
-        /// The delegate SHOULD NOT modify the passed value, otherwise corruption can occur. For modifications, call Write() or TryWrite() instead.
-        /// </summary>
-        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void TryUpgradableRead(CriticalResourceDelegateWithVoidResult function)
+        public bool TryUpgradableRead(CriticalResourceDelegateWithVoidResult function)
         {
             bool wasLockObtained = false;
             try
@@ -923,7 +784,6 @@ namespace NTDLS.Semaphore
                 if (wasLockObtained)
                 {
                     function(_value);
-                    return;
                 }
             }
             finally
@@ -933,35 +793,7 @@ namespace NTDLS.Semaphore
                     _criticalSection.Release(LockIntention.UpgradableRead);
                 }
             }
-        }
-
-        /// <summary>
-        /// Attempts to acquire the read-only write upgradable lock for the given number of milliseconds, if successful then executes the delegate function.
-        /// The delegate SHOULD NOT modify the passed value, otherwise corruption can occur. For modifications, call Write() or TryWrite() instead.
-        /// </summary>
-        /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
-        /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
-        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void TryUpgradableRead(out bool wasLockObtained, int timeoutMilliseconds, CriticalResourceDelegateWithVoidResult function)
-        {
-            wasLockObtained = false;
-            try
-            {
-                wasLockObtained = _criticalSection.TryAcquire(LockIntention.UpgradableRead, timeoutMilliseconds);
-                if (wasLockObtained)
-                {
-                    function(_value);
-                    return;
-                }
-            }
-            finally
-            {
-                if (wasLockObtained)
-                {
-                    _criticalSection.Release(LockIntention.UpgradableRead);
-                }
-            }
+            return wasLockObtained;
         }
 
         /// <summary>
@@ -971,7 +803,7 @@ namespace NTDLS.Semaphore
         /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
         /// <param name="function">The delegate function to execute if the lock is acquired.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void TryUpgradableRead(int timeoutMilliseconds, CriticalResourceDelegateWithVoidResult function)
+        public bool TryUpgradableRead(int timeoutMilliseconds, CriticalResourceDelegateWithVoidResult function)
         {
             bool wasLockObtained = false;
             try
@@ -980,7 +812,6 @@ namespace NTDLS.Semaphore
                 if (wasLockObtained)
                 {
                     function(_value);
-                    return;
                 }
             }
             finally
@@ -990,6 +821,7 @@ namespace NTDLS.Semaphore
                     _criticalSection.Release(LockIntention.UpgradableRead);
                 }
             }
+            return wasLockObtained;
         }
 
         /// <summary>
