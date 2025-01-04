@@ -14,15 +14,13 @@
     <RepositoryUrl>https://github.com/NTDLS/NTDLS.Semaphore</RepositoryUrl>
     <PackageTags>threading;critical-section;semaphore;parallel-execution;sequential-execution</PackageTags>
     <PackageReleaseNotes>
-      Exposed read-only semaphores.
-      Additional read-all, write all.
-      Varieties of try now return boolean.
+      Added PessimisticSemaphore lock ownership tracking.
     </PackageReleaseNotes>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Authors>NetworkDLS</Authors>
     <Company>NetworkDLS</Company>
-    <version>3.4.10</version>
+    <version>3.4.11</version>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <IncludeSymbols>True</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>

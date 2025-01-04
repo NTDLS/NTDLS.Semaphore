@@ -20,7 +20,7 @@ namespace NTDLS.Semaphore
         /// </summary>
         public OptimisticSemaphore()
         {
-            if (ThreadLockOwnershipTracking.Enabled)
+            if (ThreadLockOwnershipTracking.IsEnabled)
             {
                 Ownership = new();
             }

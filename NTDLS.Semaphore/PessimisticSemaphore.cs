@@ -6,6 +6,11 @@
     public class PessimisticSemaphore : ICriticalSection
     {
         /// <summary>
+        /// Thread lock ownership tracking, used for debugging when ThreadLockOwnershipTracking.Enabled is true.
+        /// </summary>
+        public Dictionary<int, HeldLock>? Ownership { get; private set; }
+
+        /// <summary>
         /// Identifies the current thread that owns the lock. This is only tracked if enabled by a call
         /// to ThreadOwnershipTracking.EnableThreadOwnershipTracking(). Once enabled, the tracking is
         /// attributed to all critical sections for the life of the application - so its definitely best
@@ -34,6 +39,17 @@
         public delegate T CriticalSectionDelegateWithNotNullableResultT<T>();
 
         #endregion
+
+        /// <summary>
+        /// Creates a new instance of PessimisticSemaphore.
+        /// </summary>
+        public PessimisticSemaphore()
+        {
+            if (ThreadLockOwnershipTracking.IsEnabled)
+            {
+                Ownership = new();
+            }
+        }
 
         #region Use/TryUse overloads.
 
@@ -385,6 +401,23 @@
             if (Monitor.TryEnter(this, timeoutMilliseconds))
             {
                 _reentrantLevel++;
+
+                if (Ownership != null)
+                {
+                    lock (Ownership)
+                    {
+                        var managedThreadId = Environment.CurrentManagedThreadId;
+
+                        if (Ownership.TryGetValue(managedThreadId, out var heldLock))
+                        {
+                            heldLock.Intentions.Add(OptimisticSemaphore.LockIntention.Exclusive);
+                        }
+                        else
+                        {
+                            Ownership.Add(managedThreadId, new HeldLock(OptimisticSemaphore.LockIntention.Exclusive, Environment.CurrentManagedThreadId));
+                        }
+                    }
+                }
                 return true;
             }
             return false;
@@ -399,6 +432,23 @@
             if (Monitor.TryEnter(this))
             {
                 _reentrantLevel++;
+
+                if (Ownership != null)
+                {
+                    lock (Ownership)
+                    {
+                        var managedThreadId = Environment.CurrentManagedThreadId;
+
+                        if (Ownership.TryGetValue(managedThreadId, out var heldLock))
+                        {
+                            heldLock.Intentions.Add(OptimisticSemaphore.LockIntention.Exclusive);
+                        }
+                        else
+                        {
+                            Ownership.Add(managedThreadId, new HeldLock(OptimisticSemaphore.LockIntention.Exclusive, Environment.CurrentManagedThreadId));
+                        }
+                    }
+                }
                 return true;
             }
             return false;
@@ -411,6 +461,23 @@
         {
             Monitor.Enter(this);
             _reentrantLevel++;
+
+            if (Ownership != null)
+            {
+                lock (Ownership)
+                {
+                    var managedThreadId = Environment.CurrentManagedThreadId;
+
+                    if (Ownership.TryGetValue(managedThreadId, out var heldLock))
+                    {
+                        heldLock.Intentions.Add(OptimisticSemaphore.LockIntention.Exclusive);
+                    }
+                    else
+                    {
+                        Ownership.Add(managedThreadId, new HeldLock(OptimisticSemaphore.LockIntention.Exclusive, Environment.CurrentManagedThreadId));
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -426,6 +493,28 @@
             }
 
             Monitor.Exit(this);
+
+            if (Ownership != null)
+            {
+                lock (Ownership)
+                {
+                    var managedThreadId = Environment.CurrentManagedThreadId;
+
+                    if (Ownership.TryGetValue(managedThreadId, out var heldLock))
+                    {
+                        heldLock.Intentions.Remove(OptimisticSemaphore.LockIntention.Exclusive);
+
+                        if (heldLock.Intentions.Count == 0)
+                        {
+                            Ownership.Remove(managedThreadId);
+                        }
+                    }
+                    else
+                    {
+                        throw new Exception("Attempted to release non-owned lock.");
+                    }
+                }
+            }
         }
 
         #endregion
