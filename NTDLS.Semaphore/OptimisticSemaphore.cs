@@ -1033,7 +1033,7 @@ namespace NTDLS.Semaphore
         /// </summary>
         /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
         /// <param name="function">The delegate function to execute if the lock is acquired.</param>
-        public bool TryUpgradableRead( int timeoutMilliseconds, CriticalResourceDelegateWithVoidResult function)
+        public bool TryUpgradableRead(int timeoutMilliseconds, CriticalResourceDelegateWithVoidResult function)
         {
             bool wasLockObtained = false;
             try
