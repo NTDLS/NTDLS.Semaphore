@@ -28,6 +28,11 @@ namespace NTDLS.Semaphore
         public delegate T InitializationCallback();
 
         /// <summary>
+        /// Used to determine if an deadlock avoidance lock should continue to be attempted.
+        /// </summary>
+        public delegate bool DeadlockAvoidanceCallback();
+
+        /// <summary>
         /// Delegate for executions that do not require a return value.
         /// </summary>
         /// <param name="obj">The variable that is being protected.</param>
@@ -312,6 +317,29 @@ namespace NTDLS.Semaphore
         }
 
         /// <summary>
+        /// Used to repeatedly attempt a lock while a given callback remains true.
+        /// The delegate SHOULD NOT modify the passed value, otherwise corruption can occur. For modifications, call Write() or TryWrite() instead.
+        /// </summary>
+        /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
+        /// <param name="deadlockAvoidanceCallback">Callback to determine if the lock should continue to be attempted.</param>
+        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool DeadlockAvoidanceTryRead(int timeoutMilliseconds,
+            DeadlockAvoidanceCallback deadlockAvoidanceCallback,
+            CriticalResourceDelegateWithVoidResult function)
+        {
+            do
+            {
+                if (TryRead(timeoutMilliseconds, function))
+                {
+                    return true;
+                }
+            } while (deadlockAvoidanceCallback());
+            return false;
+        }
+
+        /// <summary>
         /// Attempts to acquire the lock for the given number of milliseconds, if successful then executes the delegate function.
         /// </summary>
         /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
@@ -336,6 +364,27 @@ namespace NTDLS.Semaphore
                 }
             }
             return wasLockObtained;
+        }
+
+        /// <summary>
+        /// Used to repeatedly attempt a lock while a given callback remains true.
+        /// </summary>
+        /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
+        /// <param name="deadlockAvoidanceCallback">Callback to determine if the lock should continue to be attempted.</param>
+        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool DeadlockAvoidanceTryWrite(int timeoutMilliseconds,
+            DeadlockAvoidanceCallback deadlockAvoidanceCallback,
+            CriticalResourceDelegateWithVoidResult function)
+        {
+            do
+            {
+                if (TryWrite(timeoutMilliseconds, function))
+                {
+                    return true;
+                }
+            } while (deadlockAvoidanceCallback());
+            return false;
         }
 
         /// <summary>
@@ -428,6 +477,33 @@ namespace NTDLS.Semaphore
         }
 
         /// <summary>
+        /// Used to repeatedly attempt a lock while a given callback remains true.
+        /// The delegate SHOULD NOT modify the passed value, otherwise corruption can occur. For modifications, call Write() or TryWrite() instead.
+        /// </summary>
+        /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
+        /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
+        /// <param name="deadlockAvoidanceCallback">Callback to determine if the lock should continue to be attempted.</param>
+        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public R? DeadlockAvoidanceTryReadNullable<R>(out bool wasLockObtained, int timeoutMilliseconds,
+            DeadlockAvoidanceCallback deadlockAvoidanceCallback,
+            CriticalResourceDelegateWithNullableResultT<R> function)
+        {
+            do
+            {
+                var result = TryReadNullable(out wasLockObtained, timeoutMilliseconds, function);
+                if (wasLockObtained)
+                {
+                    return result;
+                }
+            } while (deadlockAvoidanceCallback());
+
+            wasLockObtained = false;
+            return default;
+        }
+
+        /// <summary>
         /// Attempts to acquire the lock for a given number of milliseconds, if successful then executes the delegate function and returns the nullable delegate value,
         /// otherwise returns null.
         /// </summary>
@@ -455,6 +531,32 @@ namespace NTDLS.Semaphore
                 }
             }
 
+            return default;
+        }
+
+        /// <summary>
+        /// Used to repeatedly attempt a lock while a given callback remains true.
+        /// </summary>
+        /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
+        /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
+        /// <param name="deadlockAvoidanceCallback">Callback to determine if the lock should continue to be attempted.</param>
+        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public R? DeadlockAvoidanceTryWriteNullable<R>(out bool wasLockObtained, int timeoutMilliseconds,
+            DeadlockAvoidanceCallback deadlockAvoidanceCallback,
+            CriticalResourceDelegateWithNullableResultT<R> function)
+        {
+            do
+            {
+                var result = TryWriteNullable(out wasLockObtained, timeoutMilliseconds, function);
+                if (wasLockObtained)
+                {
+                    return result;
+                }
+            } while (deadlockAvoidanceCallback());
+
+            wasLockObtained = false;
             return default;
         }
 
@@ -612,6 +714,34 @@ namespace NTDLS.Semaphore
         }
 
         /// <summary>
+        /// Used to repeatedly attempt a lock while a given callback remains true.
+        /// The delegate SHOULD NOT modify the passed value, otherwise corruption can occur. For modifications, call Write() or TryWrite() instead.
+        /// </summary>
+        /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
+        /// <param name="defaultValue">The value to obtain if the lock could not be acquired.</param>
+        /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
+        /// <param name="deadlockAvoidanceCallback">Callback to determine if the lock should continue to be attempted.</param>
+        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public R? DeadlockAvoidanceTryRead<R>(out bool wasLockObtained, R defaultValue,
+            int timeoutMilliseconds, DeadlockAvoidanceCallback deadlockAvoidanceCallback, CriticalResourceDelegateWithNotNullableResultT<R> function)
+        {
+            do
+            {
+                var result = TryRead(out wasLockObtained, defaultValue, timeoutMilliseconds, function);
+                if (wasLockObtained)
+                {
+                    return result;
+                }
+            } while (deadlockAvoidanceCallback());
+
+            wasLockObtained = false;
+            return default;
+        }
+
+
+        /// <summary>
         /// Attempts to acquire the lock for the given number of milliseconds. If successful then executes the delegate function and returns the non-nullable delegate value.
         /// Otherwise returns the supplied default value.
         /// </summary>
@@ -641,6 +771,32 @@ namespace NTDLS.Semaphore
             }
 
             return defaultValue;
+        }
+
+        /// <summary>
+        /// Used to repeatedly attempt a lock while a given callback remains true.
+        /// </summary>
+        /// <param name="wasLockObtained">Output boolean that denotes whether the lock was obtained.</param>
+        /// <param name="defaultValue">The value to obtain if the lock could not be acquired.</param>
+        /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
+        /// <param name="deadlockAvoidanceCallback">Callback to determine if the lock should continue to be attempted.</param>
+        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public R? DeadlockAvoidanceTryWrite<R>(out bool wasLockObtained, R defaultValue,
+            int timeoutMilliseconds, DeadlockAvoidanceCallback deadlockAvoidanceCallback, CriticalResourceDelegateWithNotNullableResultT<R> function)
+        {
+            do
+            {
+                var result = TryWrite(out wasLockObtained, defaultValue, timeoutMilliseconds, function);
+                if (wasLockObtained)
+                {
+                    return result;
+                }
+            } while (deadlockAvoidanceCallback());
+
+            wasLockObtained = false;
+            return default;
         }
 
         /// <summary>
@@ -676,6 +832,31 @@ namespace NTDLS.Semaphore
         }
 
         /// <summary>
+        /// Used to repeatedly attempt a lock while a given callback remains true.
+        /// The delegate SHOULD NOT modify the passed value, otherwise corruption can occur. For modifications, call Write() or TryWrite() instead.
+        /// </summary>
+        /// <param name="defaultValue">The value to obtain if the lock could not be acquired.</param>
+        /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
+        /// <param name="deadlockAvoidanceCallback">Callback to determine if the lock should continue to be attempted.</param>
+        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public R? DeadlockAvoidanceTryRead<R>(R defaultValue,
+            int timeoutMilliseconds, DeadlockAvoidanceCallback deadlockAvoidanceCallback, CriticalResourceDelegateWithNotNullableResultT<R> function)
+        {
+            do
+            {
+                var result = TryRead(out bool wasLockObtained, defaultValue, timeoutMilliseconds, function);
+                if (wasLockObtained)
+                {
+                    return result;
+                }
+            } while (deadlockAvoidanceCallback());
+
+            return default;
+        }
+
+        /// <summary>
         /// Attempts to acquire the lock for the given number of milliseconds. If successful then executes the delegate function and returns the non-nullable delegate value.
         /// Otherwise returns the supplied default value.
         /// </summary>
@@ -704,6 +885,30 @@ namespace NTDLS.Semaphore
             }
 
             return defaultValue;
+        }
+
+        /// <summary>
+        /// Used to repeatedly attempt a lock while a given callback remains true.
+        /// </summary>
+        /// <param name="defaultValue">The value to obtain if the lock could not be acquired.</param>
+        /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
+        /// <param name="deadlockAvoidanceCallback">Callback to determine if the lock should continue to be attempted.</param>
+        /// <param name="function">The delegate function to execute if the lock is acquired.</param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public R? DeadlockAvoidanceTryWrite<R>(R defaultValue,
+            int timeoutMilliseconds, DeadlockAvoidanceCallback deadlockAvoidanceCallback, CriticalResourceDelegateWithNotNullableResultT<R> function)
+        {
+            do
+            {
+                var result = TryWrite(out bool wasLockObtained, defaultValue, timeoutMilliseconds, function);
+                if (wasLockObtained)
+                {
+                    return result;
+                }
+            } while (deadlockAvoidanceCallback());
+
+            return default;
         }
 
         #endregion
