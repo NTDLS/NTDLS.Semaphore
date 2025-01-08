@@ -14,13 +14,13 @@
     <RepositoryUrl>https://github.com/NTDLS/NTDLS.Semaphore</RepositoryUrl>
     <PackageTags>threading;critical-section;semaphore;parallel-execution;sequential-execution</PackageTags>
     <PackageReleaseNotes>
-      Added deadlock avoidance overloads.
+      Removed parameterless constructor constraints from PessimisticCriticalResource and OptimisticCriticalResource.
     </PackageReleaseNotes>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Authors>NetworkDLS</Authors>
     <Company>NetworkDLS</Company>
-    <version>3.5.0</version>
+    <version>3.5.1</version>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <IncludeSymbols>True</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>

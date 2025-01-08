@@ -10,7 +10,7 @@ namespace NTDLS.Semaphore
     /// will not disallow modification of the resource, but this will lead to race conditions.
     /// </summary>
     /// <typeparam name="T">The type of the resource that will be instantiated and protected.</typeparam>
-    public class OptimisticCriticalResource<T> : ICriticalSection where T : class, new()
+    public class OptimisticCriticalResource<T> : ICriticalSection where T : class
     {
         private readonly T _value;
         private readonly ICriticalSection _criticalSection;
@@ -80,8 +80,9 @@ namespace NTDLS.Semaphore
         /// </summary>
         public OptimisticCriticalResource()
         {
+            _value = Activator.CreateInstance<T>()
+                ?? throw new Exception("Failed to create instance of the OptimisticCriticalResource, ensure that the type has a parameterless constructor or use another OptimisticCriticalResource constructor overload.");
             _criticalSection = new OptimisticSemaphore();
-            _value = new T();
         }
 
         /// <summary>
@@ -90,8 +91,8 @@ namespace NTDLS.Semaphore
         /// <param name="value"></param>
         public OptimisticCriticalResource(T value)
         {
-            _criticalSection = new OptimisticSemaphore();
             _value = value;
+            _criticalSection = new OptimisticSemaphore();
         }
 
         /// <summary>
@@ -100,8 +101,9 @@ namespace NTDLS.Semaphore
         /// </summary>
         public OptimisticCriticalResource(ICriticalSection criticalSection)
         {
+            _value = Activator.CreateInstance<T>()
+                ?? throw new Exception("Failed to create instance of the OptimisticCriticalResource, ensure that the type has a parameterless constructor or use another OptimisticCriticalResource constructor overload.");
             _criticalSection = criticalSection;
-            _value = new T();
         }
 
         /// <summary>

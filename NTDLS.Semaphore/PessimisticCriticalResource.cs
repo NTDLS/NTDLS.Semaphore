@@ -4,7 +4,7 @@
     /// Protects a variable from parallel / non-sequential thread access by always acquiring an exclusive lock on the resource. 
     /// </summary>
     /// <typeparam name="T">The type of the resource that will be instantiated and protected.</typeparam>
-    public class PessimisticCriticalResource<T> : ICriticalSection where T : class, new()
+    public class PessimisticCriticalResource<T> : ICriticalSection where T : class
     {
         /// <summary>
         /// Identifies the current thread that owns the lock.
@@ -153,7 +153,8 @@
         /// </summary>
         public PessimisticCriticalResource()
         {
-            _value = new T();
+            _value = Activator.CreateInstance<T>()
+                ?? throw new Exception("Failed to create instance of the PessimisticCriticalResource, ensure that the type has a parameterless constructor or use another PessimisticCriticalResource constructor overload.");
             _criticalSection = new PessimisticSemaphore();
         }
 
@@ -173,7 +174,8 @@
         /// </summary>
         public PessimisticCriticalResource(ICriticalSection criticalSection)
         {
-            _value = new T();
+            _value = Activator.CreateInstance<T>()
+                ?? throw new Exception("Failed to create instance of the PessimisticCriticalResource, ensure that the type has a parameterless constructor or use another PessimisticCriticalResource constructor overload.");
             _criticalSection = criticalSection;
         }
 
