@@ -14,18 +14,17 @@
     <RepositoryUrl>https://github.com/NTDLS/NTDLS.Semaphore</RepositoryUrl>
     <PackageTags>threading;critical-section;semaphore;parallel-execution;sequential-execution</PackageTags>
     <PackageReleaseNotes>
-      Removed parameterless constructor constraints from PessimisticCriticalResource and OptimisticCriticalResource.
+      Removed icon.
     </PackageReleaseNotes>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Authors>NetworkDLS</Authors>
     <Company>NetworkDLS</Company>
-    <version>3.5.1</version>
+    <version>3.5.2</version>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <IncludeSymbols>True</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <PackageIcon>Logo.png</PackageIcon>
-    <ApplicationIcon>NTDLS.Semaphore.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup Condition=" '$(BuildingPackage)' == 'true' ">
