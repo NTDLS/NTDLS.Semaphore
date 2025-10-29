@@ -4,6 +4,7 @@
 
 ## Pessimistic Critical Resource
 Provides various classes to protect a variable from parallel / non-sequential thread access by always acquiring an exclusive lock on the resource.
+Also allows for shared access, pessimistic locking, optimistic locking and dead-lock prevention lock patterns with lightweight cancellation.
 
 **PessimisticCriticalResource using inline execution example:**
 >An example using a PessimisticCriticalResource to envelope a variable and protect it from parallel execution,
@@ -179,3 +180,4 @@ ThreadOwnershipTracking.Enable();
 
 ## License
 [Apache-2.0](https://choosealicense.com/licenses/apache-2.0/)
+
