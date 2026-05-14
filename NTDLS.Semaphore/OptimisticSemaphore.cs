@@ -1366,9 +1366,10 @@ namespace NTDLS.Semaphore
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ReadAll(ICriticalSection[] resources, CriticalResourceDelegateWithVoidResult function)
         {
+            var spinner = new SpinWait();
             while (!TryReadAll(resources, function))
             {
-                Thread.Sleep(1);
+                spinner.SpinOnce();
             }
         }
 
@@ -1431,9 +1432,10 @@ namespace NTDLS.Semaphore
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WriteAll(ICriticalSection[] resources, CriticalResourceDelegateWithVoidResult function)
         {
+            var spinner = new SpinWait();
             while (!TryWriteAll(resources, function))
             {
-                Thread.Sleep(1);
+                spinner.SpinOnce();
             }
         }
 
