@@ -160,6 +160,10 @@ namespace NTDLS.Semaphore
             {
                 _readerWriterLockSlim.EnterWriteLock();
             }
+            else
+            {
+                throw new Exception("The lock intention type is not implemented");
+            }
 
             if (Ownership != null)
             {
@@ -1066,9 +1070,9 @@ namespace NTDLS.Semaphore
         /// <param name="function">The delegate function to execute when the lock is acquired.</param>
         public R UpgradableRead<R>(CriticalResourceDelegateWithNotNullableResultT<R> function)
         {
+            Acquire(LockIntention.UpgradableRead);
             try
             {
-                Acquire(LockIntention.UpgradableRead);
                 return function();
             }
             finally
@@ -1334,9 +1338,12 @@ namespace NTDLS.Semaphore
 
                     function();
 
-                    foreach (var lockObject in collection.Where(o => o != null && o.IsLockHeld))
+                    foreach (var lockObject in collection)
                     {
-                        lockObject.Resource.Release(LockIntention.Readonly);
+                        if (lockObject.IsLockHeld)
+                        {
+                            lockObject.Resource.Release(LockIntention.Readonly);
+                        }
                     }
 
                     return true;
@@ -1440,12 +1447,9 @@ namespace NTDLS.Semaphore
             {
                 if (disposing)
                 {
-                    // TODO: dispose managed state (managed objects)
                     _readerWriterLockSlim.Dispose();
                 }
 
-                // TODO: free unmanaged resources (unmanaged objects) and override finalizer
-                // TODO: set large fields to null
                 disposedValue = true;
             }
         }

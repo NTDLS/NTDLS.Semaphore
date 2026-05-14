@@ -194,9 +194,9 @@
         /// <param name="function">The delegate function to execute when the lock is acquired.</param>
         public R Use<R>(CriticalResourceDelegateWithNotNullableResultT<R> function)
         {
+            Acquire();
             try
             {
-                Acquire();
                 return function(_value);
             }
             finally
@@ -212,9 +212,9 @@
         /// <param name="function">The delegate function to execute when the lock is acquired.</param>
         public R? UseNullable<R>(CriticalResourceDelegateWithNullableResultT<R> function)
         {
+            Acquire();
             try
             {
-                Acquire();
                 return function(_value);
             }
             finally
@@ -641,9 +641,9 @@
         /// <param name="function">The delegate function to execute when the lock is acquired.</param>
         public void Use(CriticalResourceDelegateWithVoidResult function)
         {
+            Acquire();
             try
             {
-                Acquire();
                 function(_value);
             }
             finally
@@ -889,11 +889,8 @@
             {
                 if (disposing)
                 {
-                    // TODO: dispose managed state (managed objects)
                 }
 
-                // TODO: free unmanaged resources (unmanaged objects) and override finalizer
-                // TODO: set large fields to null
                 disposedValue = true;
             }
         }
