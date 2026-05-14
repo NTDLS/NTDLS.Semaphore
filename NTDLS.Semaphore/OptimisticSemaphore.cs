@@ -1320,9 +1320,12 @@ namespace NTDLS.Semaphore
                         if (collection[i].IsLockHeld == false)
                         {
                             //We didn't get one of the locks, free the ones we did get and bailout.
-                            foreach (var lockObject in collection.Where(o => o != null && o.IsLockHeld))
+                            foreach (var lockObject in collection)
                             {
-                                lockObject.Resource.Release(LockIntention.Readonly);
+                                if (lockObject.IsLockHeld)
+                                {
+                                    lockObject.Resource.Release(LockIntention.Readonly);
+                                }
                             }
 
                             return false;
