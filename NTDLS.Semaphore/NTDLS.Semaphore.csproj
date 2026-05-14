@@ -6,7 +6,7 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <Title>NTDLS.Semaphore</Title>
-    <Copyright>Copyright © 2025 NetworkDLS</Copyright>
+    <Copyright>Copyright © 2026 NetworkDLS</Copyright>
     <Description>
       Provides various classes to ensure sequential access to variables or sections of code in multi-threaded environments.
     </Description>
@@ -14,13 +14,13 @@
     <RepositoryUrl>https://github.com/NTDLS/NTDLS.Semaphore</RepositoryUrl>
     <PackageTags>threading;critical-section;semaphore;parallel-execution;sequential-execution</PackageTags>
     <PackageReleaseNotes>
-      Dependency updates and introduced .net 10 support.
+      Fixes and optimizations.
     </PackageReleaseNotes>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Authors>NetworkDLS</Authors>
     <Company>NetworkDLS</Company>
-    <version>3.5.4</version>
+    <version>3.6.0</version>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <IncludeSymbols>True</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
