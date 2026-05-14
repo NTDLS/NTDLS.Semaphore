@@ -256,9 +256,9 @@ namespace NTDLS.Semaphore
                     _criticalSection.Release(LockIntention.Readonly);
                 }
             }
+
             return wasLockObtained;
         }
-
 
         /// <summary>
         /// Attempts to acquire the lock, if successful then executes the delegate function.
@@ -312,6 +312,7 @@ namespace NTDLS.Semaphore
                     _criticalSection.Release(LockIntention.Readonly);
                 }
             }
+
             return wasLockObtained;
         }
 
@@ -362,6 +363,7 @@ namespace NTDLS.Semaphore
                     _criticalSection.Release(LockIntention.Exclusive);
                 }
             }
+
             return wasLockObtained;
         }
 
@@ -413,6 +415,7 @@ namespace NTDLS.Semaphore
                     _criticalSection.Release(LockIntention.Readonly);
                 }
             }
+
             return default;
         }
 
@@ -441,6 +444,7 @@ namespace NTDLS.Semaphore
                     _criticalSection.Release(LockIntention.Exclusive);
                 }
             }
+
             return default;
         }
 
@@ -588,6 +592,7 @@ namespace NTDLS.Semaphore
                     _criticalSection.Release(LockIntention.Readonly);
                 }
             }
+
             return defaultValue;
         }
 
@@ -618,6 +623,7 @@ namespace NTDLS.Semaphore
                     _criticalSection.Release(LockIntention.Exclusive);
                 }
             }
+
             return defaultValue;
         }
 
@@ -648,6 +654,7 @@ namespace NTDLS.Semaphore
                     _criticalSection.Release(LockIntention.Readonly);
                 }
             }
+
             return defaultValue;
         }
 
@@ -677,6 +684,7 @@ namespace NTDLS.Semaphore
                     _criticalSection.Release(LockIntention.Exclusive);
                 }
             }
+
             return defaultValue;
         }
 

@@ -674,6 +674,7 @@
                     Release();
                 }
             }
+
             return wasLockObtained;
         }
 
@@ -700,6 +701,7 @@
                     Release();
                 }
             }
+
             return wasLockObtained;
         }
 
@@ -728,6 +730,7 @@
                     Release();
                 }
             }
+
             return default;
         }
 
@@ -787,6 +790,7 @@
                     Release();
                 }
             }
+
             return defaultValue;
         }
 
@@ -815,6 +819,7 @@
                     Release();
                 }
             }
+
             return defaultValue;
         }
 

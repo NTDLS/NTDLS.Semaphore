@@ -404,6 +404,7 @@ namespace NTDLS.Semaphore
                     Release(LockIntention.Readonly);
                 }
             }
+
             return wasLockObtained;
         }
 
@@ -430,6 +431,7 @@ namespace NTDLS.Semaphore
                     Release(LockIntention.Exclusive);
                 }
             }
+
             return wasLockObtained;
         }
 
@@ -456,6 +458,7 @@ namespace NTDLS.Semaphore
                     Release(LockIntention.Readonly);
                 }
             }
+
             return wasLockObtained;
         }
 
@@ -482,6 +485,7 @@ namespace NTDLS.Semaphore
                     Release(LockIntention.Exclusive);
                 }
             }
+
             return wasLockObtained;
         }
 
@@ -740,7 +744,6 @@ namespace NTDLS.Semaphore
             }
         }
 
-
         #endregion
 
         #region Read/Write/TryRead/TryWrite overloads (nullable)
@@ -804,7 +807,6 @@ namespace NTDLS.Semaphore
                 }
             }
         }
-
 
         /// <summary>
         /// Attempts to acquire the lock, if successful then executes the delegate function.
@@ -1031,6 +1033,7 @@ namespace NTDLS.Semaphore
                     Release(LockIntention.UpgradableRead);
                 }
             }
+
             return wasLockObtained;
         }
 
@@ -1057,6 +1060,7 @@ namespace NTDLS.Semaphore
                     Release(LockIntention.UpgradableRead);
                 }
             }
+
             return wasLockObtained;
         }
 
@@ -1396,9 +1400,12 @@ namespace NTDLS.Semaphore
                         if (collection[i].IsLockHeld == false)
                         {
                             //We didn't get one of the locks, free the ones we did get and bailout.
-                            foreach (var lockObject in collection.Where(o => o != null && o.IsLockHeld))
+                            foreach (var lockObject in collection)
                             {
-                                lockObject.Resource.Release(LockIntention.Exclusive);
+                                if (lockObject.IsLockHeld)
+                                {
+                                    lockObject.Resource.Release(LockIntention.Exclusive);
+                                }
                             }
 
                             return false;
@@ -1407,9 +1414,12 @@ namespace NTDLS.Semaphore
 
                     function();
 
-                    foreach (var lockObject in collection.Where(o => o != null && o.IsLockHeld))
+                    foreach (var lockObject in collection)
                     {
-                        lockObject.Resource.Release(LockIntention.Exclusive);
+                        if (lockObject.IsLockHeld)
+                        {
+                            lockObject.Resource.Release(LockIntention.Exclusive);
+                        }
                     }
 
                     return true;

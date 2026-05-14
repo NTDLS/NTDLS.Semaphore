@@ -69,6 +69,7 @@
                     Release();
                 }
             }
+
             return defaultValue;
         }
 
@@ -92,8 +93,8 @@
                     Release();
                 }
             }
-            return defaultValue;
 
+            return defaultValue;
         }
 
         /// <summary>
@@ -117,6 +118,7 @@
                     Release();
                 }
             }
+
             return defaultValue;
         }
 
@@ -142,6 +144,7 @@
                     Release();
                 }
             }
+
             return defaultValue;
         }
 
@@ -163,6 +166,7 @@
                     Release();
                 }
             }
+
             return default;
         }
 
@@ -185,8 +189,8 @@
                     Release();
                 }
             }
-            return default;
 
+            return default;
         }
 
         /// <summary>
@@ -209,6 +213,7 @@
                     Release();
                 }
             }
+
             return default;
         }
 
@@ -233,6 +238,7 @@
                     Release();
                 }
             }
+
             return default;
         }
 
@@ -254,6 +260,7 @@
                 }
                 return true;
             }
+
             return false;
         }
 
@@ -276,6 +283,7 @@
                 }
                 return true;
             }
+
             return false;
         }
 
