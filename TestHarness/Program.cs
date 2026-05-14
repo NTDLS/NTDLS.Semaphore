@@ -7,14 +7,13 @@ namespace TestHarness
         static void Main()
         {
             //If you need to keep track of which thread owns each semaphore and/or critical sections then
-            //  you can enable "ThreadOwnershipTracking" by calling ThreadOwnershipTracking.Enable(). Once this
+            //  you can enable "ThreadLockOwnershipTracking" by calling ThreadLockOwnershipTracking.Enable(). Once this
             //  is enabled, it is enabled for the life of the application so this is only for debugging
             //  deadlock/race-condition tracking.
             //You can evaluate the ownership by evaluating
-            //  the dictionary "ThreadOwnershipTracking.LockRegistration" or and instance of
-            //  "PessimisticCriticalSection" or "PessimisticSemaphore" CurrentOwnerThread.
+            //  the dictionary "ThreadLockOwnershipTracking.LockRegistration".
             //
-            //ThreadOwnershipTracking.Enable();
+            //ThreadLockOwnershipTracking.Enable();
 
             ThreadLockOwnershipTracking.Enable();
 

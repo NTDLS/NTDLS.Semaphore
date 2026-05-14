@@ -164,20 +164,19 @@ public int Value
 
 ## Thread ownership tracking
 If you need to keep track of which thread owns each semaphore and/or critical sections then
-  you can enable "ThreadOwnershipTracking" by calling ThreadOwnershipTracking.Enable(). Once this
+  you can enable "ThreadLockOwnershipTracking" by calling ThreadLockOwnershipTracking.Enable(). Once this
   is enabled, it is enabled for the life of the application so this is only for debugging
   deadlock/race-condition tracking.
 You can evaluate the ownership by evaluating
-  the dictonary "ThreadOwnershipTracking.LockRegistration" or and instance of
-  "PessimisticSemaphore" or "PessimisticCriticalResource" CurrentOwnerThread.
+  the dictonary "ThreadLockOwnershipTracking.LockRegistration".
 
 **Enabling Thread Ownership Tracking**
 >
 >An example of enabling the thread ownerhsip mechanism.
 ```csharp
-ThreadOwnershipTracking.Enable();
+ThreadLockOwnershipTracking.Enable();
 ```
 
 ## License
-[Apache-2.0](https://choosealicense.com/licenses/apache-2.0/)
+[MIT](https://choosealicense.com/licenses/mit/)
 

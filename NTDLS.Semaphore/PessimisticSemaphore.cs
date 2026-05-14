@@ -3,21 +3,18 @@
     /// <summary>
     /// Protects an area of code from parallel / non-sequential thread access.
     /// </summary>
-    public class PessimisticSemaphore : ICriticalSection
+    public class PessimisticSemaphore
+        : ICriticalSection
     {
         /// <summary>
         /// Thread lock ownership tracking, used for debugging when ThreadLockOwnershipTracking.Enabled is true.
         /// </summary>
         public Dictionary<int, HeldLock>? Ownership { get; private set; }
 
-        /// <summary>
-        /// Identifies the current thread that owns the lock. This is only tracked if enabled by a call
-        /// to ThreadOwnershipTracking.EnableThreadOwnershipTracking(). Once enabled, the tracking is
-        /// attributed to all critical sections for the life of the application - so its definitely best
-        /// only enabled in debugging.
-        /// </summary>
-        public Thread? CurrentOwnerThread { get; private set; }
+        private readonly object _syncRoot = new();
+
         private int _reentrantLevel = 0;
+        private bool disposedValue;
 
         #region Delegates.
 
@@ -398,7 +395,7 @@
         /// <param name="timeoutMilliseconds">The amount of time to attempt to acquire a lock. -1 = infinite, 0 = try one time, >0 = duration.</param>
         private bool TryAcquire(int timeoutMilliseconds)
         {
-            if (Monitor.TryEnter(this, timeoutMilliseconds))
+            if (Monitor.TryEnter(_syncRoot, timeoutMilliseconds))
             {
                 _reentrantLevel++;
 
@@ -429,7 +426,7 @@
         /// </summary>
         private bool TryAcquire()
         {
-            if (Monitor.TryEnter(this))
+            if (Monitor.TryEnter(_syncRoot))
             {
                 _reentrantLevel++;
 
@@ -459,7 +456,7 @@
         /// </summary>
         private void Acquire()
         {
-            Monitor.Enter(this);
+            Monitor.Enter(_syncRoot);
             _reentrantLevel++;
 
             if (Ownership != null)
@@ -492,7 +489,7 @@
                 throw new InvalidOperationException("Cannot release an unowned reentrant lock.");
             }
 
-            Monitor.Exit(this);
+            Monitor.Exit(_syncRoot);
 
             if (Ownership != null)
             {
@@ -515,6 +512,35 @@
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Disposes the current instance of PessimisticSemaphore.
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // TODO: dispose managed state (managed objects)
+                }
+
+                // TODO: free unmanaged resources (unmanaged objects) and override finalizer
+                // TODO: set large fields to null
+                disposedValue = true;
+            }
+        }
+
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
 
         #endregion

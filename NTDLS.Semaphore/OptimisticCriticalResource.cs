@@ -10,10 +10,12 @@ namespace NTDLS.Semaphore
     /// will not disallow modification of the resource, but this will lead to race conditions.
     /// </summary>
     /// <typeparam name="T">The type of the resource that will be instantiated and protected.</typeparam>
-    public class OptimisticCriticalResource<T> : ICriticalSection where T : class
+    public class OptimisticCriticalResource<T>
+        : ICriticalSection where T : class
     {
         private readonly T _value;
         private readonly ICriticalSection _criticalSection;
+        private bool disposedValue;
 
         /// <summary>
         /// The critical section used by this resource. Allows for external locking.
@@ -2156,6 +2158,35 @@ namespace NTDLS.Semaphore
         /// </summary>
         void ICriticalSection.Release(LockIntention intention)
             => _criticalSection.Release(intention);
+
+        /// <summary>
+        /// Disposes the current instance of OptimisticCriticalResource.
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // TODO: dispose managed state (managed objects)
+                }
+
+                // TODO: free unmanaged resources (unmanaged objects) and override finalizer
+                // TODO: set large fields to null
+                disposedValue = true;
+            }
+        }
+
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
 
         #endregion
     }

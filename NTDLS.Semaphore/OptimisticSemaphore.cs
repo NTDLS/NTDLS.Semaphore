@@ -6,9 +6,11 @@ namespace NTDLS.Semaphore
     /// The optimistic semaphore is at the core of the optimistic critical resource.
     /// Can be instantiated externally and shared across optimistic semaphores
     /// </summary>
-    public class OptimisticSemaphore : ICriticalSection
+    public class OptimisticSemaphore
+        : ICriticalSection
     {
         private readonly ReaderWriterLockSlim _readerWriterLockSlim = new(LockRecursionPolicy.SupportsRecursion);
+        private bool disposedValue;
 
         /// <summary>
         /// Thread lock ownership tracking, used for debugging when ThreadLockOwnershipTracking.Enabled is true.
@@ -348,9 +350,9 @@ namespace NTDLS.Semaphore
         /// <param name="function">The delegate function to execute when the lock is acquired.</param>
         public void Read(CriticalResourceDelegateWithVoidResult function)
         {
+            Acquire(LockIntention.Readonly);
             try
             {
-                Acquire(LockIntention.Readonly);
                 function();
             }
             finally
@@ -365,9 +367,9 @@ namespace NTDLS.Semaphore
         /// <param name="function">The delegate function to execute when the lock is acquired.</param>
         public void Write(CriticalResourceDelegateWithVoidResult function)
         {
+            Acquire(LockIntention.Exclusive);
             try
             {
-                Acquire(LockIntention.Exclusive);
                 function();
             }
             finally
@@ -489,9 +491,9 @@ namespace NTDLS.Semaphore
         /// <param name="function">The delegate function to execute when the lock is acquired.</param>
         public R Read<R>(CriticalResourceDelegateWithNotNullableResultT<R> function)
         {
+            Acquire(LockIntention.Readonly);
             try
             {
-                Acquire(LockIntention.Readonly);
                 return function();
             }
             finally
@@ -506,9 +508,9 @@ namespace NTDLS.Semaphore
         /// <param name="function">The delegate function to execute when the lock is acquired.</param>
         public R Write<R>(CriticalResourceDelegateWithNotNullableResultT<R> function)
         {
+            Acquire(LockIntention.Exclusive);
             try
             {
-                Acquire(LockIntention.Exclusive);
                 return function();
             }
             finally
@@ -745,9 +747,9 @@ namespace NTDLS.Semaphore
         /// <param name="function">The delegate function to execute when the lock is acquired.</param>
         public R? ReadNullable<R>(CriticalResourceDelegateWithNullableResultT<R> function)
         {
+            Acquire(LockIntention.Readonly);
             try
             {
-                Acquire(LockIntention.Readonly);
                 return function();
             }
             finally
@@ -762,9 +764,9 @@ namespace NTDLS.Semaphore
         /// <param name="function">The delegate function to execute when the lock is acquired.</param>
         public R? WriteNullable<R>(CriticalResourceDelegateWithNullableResultT<R> function)
         {
+            Acquire(LockIntention.Exclusive);
             try
             {
-                Acquire(LockIntention.Exclusive);
                 return function();
             }
             finally
@@ -992,9 +994,9 @@ namespace NTDLS.Semaphore
         /// <param name="function">The delegate function to execute when the lock is acquired.</param>
         public void UpgradableRead(CriticalResourceDelegateWithVoidResult function)
         {
+            Acquire(LockIntention.UpgradableRead);
             try
             {
-                Acquire(LockIntention.UpgradableRead);
                 function();
             }
             finally
@@ -1022,7 +1024,7 @@ namespace NTDLS.Semaphore
             {
                 if (wasLockObtained)
                 {
-                    Release(LockIntention.Readonly);
+                    Release(LockIntention.UpgradableRead);
                 }
             }
             return wasLockObtained;
@@ -1048,7 +1050,7 @@ namespace NTDLS.Semaphore
             {
                 if (wasLockObtained)
                 {
-                    Release(LockIntention.Readonly);
+                    Release(LockIntention.UpgradableRead);
                 }
             }
             return wasLockObtained;
@@ -1423,6 +1425,36 @@ namespace NTDLS.Semaphore
             {
                 Thread.Sleep(1);
             }
+        }
+
+        /// <summary>
+        /// Disposes the current instance of OptimisticSemaphore.
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // TODO: dispose managed state (managed objects)
+                    _readerWriterLockSlim.Dispose();
+                }
+
+                // TODO: free unmanaged resources (unmanaged objects) and override finalizer
+                // TODO: set large fields to null
+                disposedValue = true;
+            }
+        }
+
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
 
         #endregion

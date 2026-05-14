@@ -6,6 +6,7 @@ namespace NTDLS.Semaphore
     /// Both optimistic and pessimistic critical sections must inherit from this interface.
     /// </summary>
     public interface ICriticalSection
+        : IDisposable
     {
         /// <summary>
         /// Internal use only. Blocks until the lock is acquired.

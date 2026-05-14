@@ -4,14 +4,12 @@
     /// Protects a variable from parallel / non-sequential thread access by always acquiring an exclusive lock on the resource. 
     /// </summary>
     /// <typeparam name="T">The type of the resource that will be instantiated and protected.</typeparam>
-    public class PessimisticCriticalResource<T> : ICriticalSection where T : class
+    public class PessimisticCriticalResource<T>
+        : ICriticalSection where T : class
     {
-        /// <summary>
-        /// Identifies the current thread that owns the lock.
-        /// </summary>
-        public Thread? CurrentOwnerThread { get; private set; }
         private readonly ICriticalSection _criticalSection;
         private readonly T _value;
+        private bool disposedValue;
 
         /// <summary>
         /// The critical section used by this resource. Allows for external locking.
@@ -879,6 +877,35 @@
             }
 
             return defaultValue;
+        }
+
+        /// <summary>
+        /// Disposes the current instance of PessimisticCriticalResource.
+        /// </summary>
+        /// <param name="disposing"></param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // TODO: dispose managed state (managed objects)
+                }
+
+                // TODO: free unmanaged resources (unmanaged objects) and override finalizer
+                // TODO: set large fields to null
+                disposedValue = true;
+            }
+        }
+
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }
