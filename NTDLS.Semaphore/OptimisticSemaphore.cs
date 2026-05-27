@@ -199,7 +199,7 @@ namespace NTDLS.Semaphore
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool TryAcquire(LockIntention intention, int timeoutMilliseconds)
         {
-            bool acquired = false;
+            bool acquired;
 
             if (intention == LockIntention.Readonly)
             {

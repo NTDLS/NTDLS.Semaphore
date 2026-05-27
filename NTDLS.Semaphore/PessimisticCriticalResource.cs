@@ -1,4 +1,6 @@
-﻿namespace NTDLS.Semaphore
+﻿using System.Runtime.CompilerServices;
+
+namespace NTDLS.Semaphore
 {
     /// <summary>
     /// Protects a variable from parallel / non-sequential thread access by always acquiring an exclusive lock on the resource. 
@@ -185,6 +187,16 @@
         {
             _value = value;
             _criticalSection = criticalSection;
+        }
+
+        /// <summary>
+        /// Allows for peeking at the value without acquiring a lock.
+        /// This is not thread safe and should only be used for debugging or in cases where an approximate value is sufficient.
+        /// </summary>
+        /// <param name="function">The delegate function to execute.</param>
+        public R Peek<R>(CriticalResourceDelegateWithNotNullableResultT<R> function)
+        {
+            return function(_value);
         }
 
         /// <summary>
