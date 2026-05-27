@@ -194,9 +194,32 @@ namespace NTDLS.Semaphore
         /// This is not thread safe and should only be used for debugging or in cases where an approximate value is sufficient.
         /// </summary>
         /// <param name="function">The delegate function to execute.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public R Peek<R>(CriticalResourceDelegateWithNotNullableResultT<R> function)
         {
             return function(_value);
+        }
+
+        /// <summary>
+        /// Allows for peeking at the value without acquiring a lock.
+        /// This is not thread safe and should only be used for debugging or in cases where an approximate value is sufficient.
+        /// </summary>
+        /// <param name="function">The delegate function to execute.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public R? PeekNullable<R>(CriticalResourceDelegateWithNullableResultT<R> function)
+        {
+            return function(_value);
+        }
+
+        /// <summary>
+        /// Allows for peeking at the value without acquiring a lock.
+        /// This is not thread safe and should only be used for debugging or in cases where an approximate value is sufficient.
+        /// </summary>
+        /// <param name="function">The delegate function to execute.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Peek(CriticalResourceDelegateWithVoidResult function)
+        {
+            function(_value);
         }
 
         /// <summary>
