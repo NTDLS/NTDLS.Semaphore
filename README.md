@@ -1,158 +1,186 @@
 # NTDLS.Semaphore
 
+**NTDLS.Semaphore** is a .NET library (net8.0 / net9.0 / net10.0) that makes it easy to guarantee sequential access to variables and sections of code in multi-threaded applications. Instead of sprinkling `lock` statements throughout your code, you wrap the data or the critical section once and then execute work against it through a small set of well-named methods: blocking (`Use`, `Read`, `Write`), non-blocking (`TryUse`, `TryRead`, `TryWrite`), timed variants with millisecond timeouts, and multi-lock variants for when several locks must be held at once.
+
 📦 Be sure to check out the NuGet package: https://www.nuget.org/packages/NTDLS.Semaphore
 
-## Pessimistic Critical Resource
-Provides various classes to protect a variable from parallel / non-sequential thread access by always acquiring an exclusive lock on the resource.
-Also allows for shared access, pessimistic locking, optimistic locking and dead-lock prevention lock patterns with lightweight cancellation.
+## When to use this package
 
-**PessimisticCriticalResource using inline execution example:**
->An example using a PessimisticCriticalResource to envelope a variable and protect it from parallel execution,
-> Note that there are nullable and non-nullable counterparts and also template/generics of each method to
-> allow you to return various types from the delegate execution.
+Reach for NTDLS.Semaphore when you need to protect shared state from parallel or non-sequential thread access and want more control than a plain `lock` statement gives you:
+
+- **You want to guard a variable, not just a block of code.** `PessimisticCriticalResource<T>` and `OptimisticCriticalResource<T>` encapsulate a value together with its lock, so every access goes through the same protected entry points.
+- **You want reads to not block other readers.** `OptimisticCriticalResource<T>` acquires read-only and exclusive locks separately, so concurrent `Read` operations do not queue behind each other.
+- **You want to avoid blocking the caller.** The `Try*` overloads attempt the lock once (or for a bounded number of milliseconds) and report whether they succeeded instead of waiting indefinitely — useful for fire-and-forget updates, UI code, or back-pressure logic.
+- **You need to hold several locks at once.** The `...All` overloads acquire the resource's own lock plus an array of additional `ICriticalSection` locks atomically, releasing everything cleanly if any one of them cannot be obtained.
+- **You want deadlock-aware retries.** `DeadlockAvoidanceTryRead` / `DeadlockAvoidanceTryWrite` retry a timed lock attempt while a cancellation token stays uncancelled.
+- **You are debugging deadlocks or race conditions.** Optional process-wide thread ownership tracking records which thread holds which lock.
+
+## Usage
+
+### Pessimistic critical resource
+
+`PessimisticCriticalResource<T>` protects a reference-type variable by always taking an exclusive lock before executing a delegate against it. There are nullable and non-nullable return variants of each method so you can return any type from the delegate.
+
 ```csharp
+using NTDLS.Semaphore;
+
 public class Car
 {
     public string? Name { get; set; }
-    public int NumerOhWheels { get; set; }
+    public int NumberOfWheels { get; set; }
 }
 
-public PessimisticCriticalResource<List<Car>> Cars { get; set; } = new();
+// Wrap the list together with its lock.
+public PessimisticCriticalResource<List<Car>> Cars { get; } = new();
 
+// Blocks until the lock is acquired, then adds the car.
 public void Add(Car car)
 {
     Cars.Use((obj) => obj.Add(car));
 }
 
+// Returns the first matching car; UseNullable<T> supports nullable results.
 public Car? GetByName(string name)
 {
-    return Cars.Use((obj) => obj.Where(o=>o.Name == name).FirstOrDefault());
+    return Cars.UseNullable((obj) => obj.Where(o => o.Name == name).FirstOrDefault());
 }
 
+// TryUse does not block: it returns false if the lock could not be obtained.
 public bool TryAdd(Car car)
 {
-    //Since TryUse<T> can return values, we have to pass the result of the try out though a variable.
-    Cars.TryUse(out bool wasLockObtained, (obj) => obj.Add(car));
-    return wasLockObtained;
+    return Cars.TryUse((obj) => obj.Add(car));
 }
 
-public bool TryAdd(Car car, int timeout)
+// Timed variant: wait up to 500 ms for the lock.
+public bool TryAdd(Car car, int timeoutMilliseconds)
 {
-    //Since TryUse<T> can return values, we have to pass the result of the try out though a variable.
-    Cars.TryUse(out bool wasLockObtained, timeout, (obj) => obj.Add(car));
-    return wasLockObtained;
+    return Cars.TryUse(timeoutMilliseconds, (obj) => obj.Add(car));
+}
+
+// Peek executes without taking the lock at all (unsafe unless you know no
+// other thread can touch the value concurrently).
+public void PrintCount()
+{
+    Cars.Peek((obj) => Console.WriteLine(obj.Count));
 }
 ```
 
+#### Locking multiple resources at once
 
-**Multi PessimisticCriticalResource using inline execution example:**
->An example using a PessimisticCriticalResource to envelope a variable and protect it and others from parallel execution.
-```
-public class Car
-{
-    public string? Name { get; set; }
-    public int NumerOhWheels { get; set; }
-}
+`TryUseAll` acquires the resource's own lock plus every lock in the supplied array; if any lock cannot be obtained, the ones already held are released and `false` is returned.
 
-public PessimisticCriticalResource<List<Car>> Cars { get; set; } = new();
-public PessimisticSemaphore OtherLock1 { get; set; } = new();
-public PessimisticSemaphore OtherLock2 { get; set; } = new();
-public PessimisticSemaphore OtherLock3 { get; set; } = new();
-
-public void Add(Car car)
-{
-    Cars.Use((obj) => obj.Add(car));
-}
-
-public Car? GetByName(string name)
-{
-    return Cars.Use((obj) => obj.Where(o => o.Name == name).FirstOrDefault());
-}
-
-public bool TryAdd(Car car)
-{
-    //Since TryUse<T> can return values, we have to pass the result of the try out though a variable.
-    Cars.TryUse(out bool wasLockObtained, (obj) => obj.Add(car));
-    return wasLockObtained;
-}
-
-public bool TryAdd(Car car, int timeout)
-{
-    //Since TryUse<T> can return values, we have to pass the result of the try out though a variable.
-    Cars.TryUse(out bool wasLockObtained, timeout, (obj) => obj.Add(car));
-    return wasLockObtained;
-}
-
-public Car? TryGet(string name, int timeout)
-{
-    return Cars.TryUseAll(new[] { OtherLock1, OtherLock2, OtherLock3 }, timeout, out bool wasLockObtained, (obj) =>
-    {
-        //We only get here if we are able to lock "Cars" and OtherLock1, OtherLock2 and OtherLock3
-        return obj.Where(o => o.Name == name).FirstOrDefault();
-    });
-}
-```
-
-
-## Optimistic Critical Resource
-Protects a variable from parallel / non-sequential thread access but controls read-only and exclusive
-access separately to prevent read operations from blocking other read operations.it is up to the developer
-to determine when each lock type is appropriate. Note: read-only locks only indicate intention, the resource
-will not disallow modification of the resource, but this will lead to race conditions.
-
-**OptimisticCriticalResource using inline execution example:**
->
->An example using a OptimisticCriticalResource to protect a portion of code from parallel execution while not allowing reads to block reads.
 ```csharp
+using NTDLS.Semaphore;
+
+public PessimisticCriticalResource<List<Car>> Cars { get; } = new();
+public PessimisticSemaphore OtherLock1 { get; } = new();
+public PessimisticSemaphore OtherLock2 { get; } = new();
+
+// Only runs if "Cars" AND both other locks can be obtained within the timeout.
+public Car? TryGet(string name, int timeoutMilliseconds)
+{
+    // Nullable-result overload: returns null if any lock could not be obtained.
+    return Cars.TryUseAllNullable(
+        new ICriticalSection[] { OtherLock1, OtherLock2 },
+        timeoutMilliseconds,
+        out bool wasLockObtained,
+        (obj) => obj.Where(o => o.Name == name).FirstOrDefault());
+}
+```
+
+### Optimistic critical resource
+
+`OptimisticCriticalResource<T>` separates read-only and exclusive access so that read operations do not block other read operations. It is up to you to pick the right lock kind per operation. Note: read-only locks only express intention — nothing stops a reader from mutating the value, but doing so will cause race conditions.
+
+```csharp
+using NTDLS.Semaphore;
+
 public class Car
 {
     public string? Name { get; set; }
-    public int NumerOhWheels { get; set; }
+    public int NumberOfWheels { get; set; }
 }
 
-public OptimisticCriticalResource<List<Car>> Cars { get; set; } = new();
+public OptimisticCriticalResource<List<Car>> Cars { get; } = new();
 
+// Exclusive access: blocks until no other writer holds the lock.
 public void Add(Car car)
 {
     Cars.Write((obj) => obj.Add(car));
 }
 
+// Read-only access: does not block other readers.
+// The delegate SHOULD NOT modify the passed value.
 public Car? GetByName(string name)
 {
-    return Cars.Read((obj) => obj.Where(o=>o.Name == name).FirstOrDefault());
+    return Cars.ReadNullable((obj) => obj.Where(o => o.Name == name).FirstOrDefault());
 }
 
+// Non-blocking write: returns false instead of waiting if the lock is busy.
 public bool TryAdd(Car car)
 {
-    //Since TryUse<T> can return values, we have to pass the result of the try out though a variable.
-    Cars.TryWrite(out bool wasLockObtained, (obj) => obj.Add(car));
-    return wasLockObtained;
+    return Cars.TryWrite((obj) => obj.Add(car));
 }
 
-public bool TryAdd(Car car, int timeout)
+// Timed non-blocking write: wait up to 500 ms for the exclusive lock.
+public bool TryAdd(Car car, int timeoutMilliseconds)
 {
-    //Since TryUse<T> can return values, we have to pass the result of the try out though a variable.
-    Cars.TryWrite(out bool wasLockObtained, timeout, (obj) => obj.Add(car));
+    return Cars.TryWrite(timeoutMilliseconds, (obj) => obj.Add(car));
+}
+```
+
+#### Reading across multiple resources
+
+`ReadAll` / `TryReadAll` take the resource's own read-only lock plus read-only locks on an array of other sections, so several resources can be snapshotted consistently without blocking writers on unrelated resources.
+
+```csharp
+using NTDLS.Semaphore;
+
+public OptimisticCriticalResource<List<Car>> Cars { get; } = new();
+public OptimisticCriticalResource<List<string>> GarageNames { get; } = new();
+
+// Acquires read locks on Cars plus every section in the supplied array.
+public bool Snapshot(out List<Car>? cars, out List<string>? names)
+{
+    cars = null;
+    names = null;
+
+    // Waits up to 1000 ms; returns false if any read lock could not be obtained.
+    bool wasLockObtained = Cars.TryReadAll(
+        new ICriticalSection[] { GarageNames },
+        1000,
+        (obj) =>
+        {
+            // The delegate only runs once all read locks are held.
+            cars = new List<Car>(obj);
+            names = new List<string>();
+        });
+
+    if (wasLockObtained)
+    {
+        // Read the second resource under its own read-only lock.
+        names = GarageNames.ReadNullable((g) => g.ToList());
+    }
+
     return wasLockObtained;
 }
 ```
 
+### Critical section (semaphore)
 
-## Critical Section
-Protects an area of code from parallel / non-sequential thread access.
+When you only need to protect a region of code rather than a specific variable, use `PessimisticSemaphore` directly.
 
-**PessimisticSemaphore using inline execution example:**
->
->An example using a PessimisticSemaphore to protect a portion of code from parallel execution.
 ```csharp
-private PessimisticSemaphore _pessimisticSemaphore = new();
+using NTDLS.Semaphore;
 
+private readonly PessimisticSemaphore _pessimisticSemaphore = new();
 private int _value;
 
 public int Value
 {
     get
     {
+        // Use<T> blocks until the section is free, then returns the delegate result.
         return _pessimisticSemaphore.Use(() => _value);
     }
     set
@@ -160,23 +188,28 @@ public int Value
         _pessimisticSemaphore.Use(() => _value = value);
     }
 }
+
+// TryUse does not block: returns true only if the section was free.
+public bool TrySetValue(int newValue)
+{
+    return _pessimisticSemaphore.TryUse(() => _value = newValue);
+}
 ```
 
-## Thread ownership tracking
-If you need to keep track of which thread owns each semaphore and/or critical sections then
-  you can enable "ThreadLockOwnershipTracking" by calling ThreadLockOwnershipTracking.Enable(). Once this
-  is enabled, it is enabled for the life of the application so this is only for debugging
-  deadlock/race-condition tracking.
-You can evaluate the ownership by evaluating
-  the dictonary "ThreadLockOwnershipTracking.LockRegistration".
+### Thread ownership tracking
 
-**Enabling Thread Ownership Tracking**
->
->An example of enabling the thread ownerhsip mechanism.
+If you need to see which thread owns each semaphore or critical section, enable process-wide ownership tracking. Once enabled it stays enabled for the life of the process, so treat it as a debugging aid for hunting deadlocks and race conditions.
+
 ```csharp
+using NTDLS.Semaphore;
+
+// Enables tracking for the whole process (debugging only).
 ThreadLockOwnershipTracking.Enable();
+
+// Afterwards, inspect PessimisticSemaphore.Ownership / OptimisticSemaphore.Ownership
+// (Dictionary<int, HeldLock>, keyed by thread id) to see who holds what.
 ```
 
 ## License
-[MIT](https://choosealicense.com/licenses/mit/)
 
+[MIT](https://choosealicense.com/licenses/mit/)
